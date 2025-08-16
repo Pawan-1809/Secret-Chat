@@ -1,0 +1,572 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Bhej - Anonymous Chat Rooms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    'inter': ['Inter', 'sans-serif']
+                },
+                colors: {
+                    'primary': '#334155',
+                    'secondary': '#10b981', 
+                    'accent': '#3b82f6'
+                }
+            }
+        }
+    };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 font-inter">
+    <!-- @COMPONENT: App [Main application container] -->
+    <div id="app" class="min-h-screen">
+        
+        <!-- @COMPONENT: HomePage [Landing page with main options] -->
+        <!-- @STATE: currentView:string = 'home' -->
+        <div id="home-page" class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold text-primary mb-4">
+                    <i class="fas fa-comments mr-3 text-secondary"></i>Code Bhej
+                </h1>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Anonymous, instant chat rooms. No signup required. Share code, ideas, or just chat away.
+                </p>
+            </div>
+
+            <!-- Main Options -->
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <!-- Public Chat Option -->
+                <!-- @COMPONENT: PublicChatCard [Card for joining public chats] -->
+                <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-globe text-2xl text-secondary"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-primary mb-4">Public Chat Rooms</h3>
+                        <p class="text-gray-600 mb-6">Join active public conversations instantly. See what others are discussing.</p>
+                        <button data-event="click:showPublicRooms" class="w-full bg-secondary hover:bg-secondary/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                            Browse Public Rooms
+                        </button>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: PublicChatCard -->
+
+                <!-- Private Chat Option -->
+                <!-- @COMPONENT: PrivateChatCard [Card for joining/creating private chats] -->
+                <div class="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300 border border-gray-100">
+                    <div class="text-center">
+                        <div class="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-lock text-2xl text-accent"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-primary mb-4">Private Chat Rooms</h3>
+                        <p class="text-gray-600 mb-6">Create or join private rooms with unique IDs. Password protection available.</p>
+                        <button data-event="click:showPrivateRooms" class="w-full bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                            Join Private Room
+                        </button>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: PrivateChatCard -->
+            </div>
+
+            <!-- Quick Create Room -->
+            <!-- @COMPONENT: QuickCreateRoom [Floating action for instant room creation] -->
+            <div class="text-center">
+                <div class="inline-flex items-center space-x-4">
+                    <button data-event="click:createPublicRoom" class="bg-white border-2 border-secondary text-secondary hover:bg-secondary hover:text-white font-medium py-2 px-6 rounded-lg transition-all duration-200">
+                        <i class="fas fa-plus mr-2"></i>Create Public Room
+                    </button>
+                    <span class="text-gray-400">or</span>
+                    <button data-event="click:createPrivateRoom" class="bg-white border-2 border-accent text-accent hover:bg-accent hover:text-white font-medium py-2 px-6 rounded-lg transition-all duration-200">
+                        <i class="fas fa-plus mr-2"></i>Create Private Room
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: QuickCreateRoom -->
+        </div>
+        <!-- @END_COMPONENT: HomePage -->
+
+        <!-- @COMPONENT: PublicRoomsPage [List of active public chat rooms] -->
+        <div id="public-rooms-page" class="container mx-auto px-4 py-8 max-w-4xl hidden">
+            <!-- Header with Back Button -->
+            <div class="flex items-center mb-8">
+                <button data-event="click:goHome" class="text-gray-500 hover:text-primary transition-colors duration-200 mr-4">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <div>
+                    <h2 class="text-3xl font-bold text-primary">Public Chat Rooms</h2>
+                    <p class="text-gray-600">Join any active conversation instantly</p>
+                </div>
+            </div>
+
+            <!-- Active Rooms List -->
+            <!-- @MAP: publicRooms.map(room => ( -->
+            <div class="space-y-4 mb-8">
+                <!-- Room Card 1 -->
+                <!-- @COMPONENT: RoomCard [Individual room listing] -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-primary" data-bind="room.name">General Discussion</h3>
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                    <span data-bind="room.participants">12</span> online
+                                </span>
+                            </div>
+                            <p class="text-gray-600 text-sm" data-bind="room.description">Talk about anything and everything</p>
+                            <div class="flex items-center text-xs text-gray-500 mt-2">
+                                <span data-bind="room.lastActivity">Last activity: 2 minutes ago</span>
+                            </div>
+                        </div>
+                        <button data-event="click:joinRoom" data-room-id="general" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                            Join Room
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Room Card 2 -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-primary" data-bind="room.name">Code Help</h3>
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                    <span data-bind="room.participants">8</span> online
+                                </span>
+                            </div>
+                            <p class="text-gray-600 text-sm" data-bind="room.description">Get help with coding problems, share solutions</p>
+                            <div class="flex items-center text-xs text-gray-500 mt-2">
+                                <span data-bind="room.lastActivity">Last activity: 5 minutes ago</span>
+                            </div>
+                        </div>
+                        <button data-event="click:joinRoom" data-room-id="code-help" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                            Join Room
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Room Card 3 -->
+                <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <h3 class="text-lg font-semibold text-primary" data-bind="room.name">Random Chat</h3>
+                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                    <span data-bind="room.participants">25</span> online
+                                </span>
+                            </div>
+                            <p class="text-gray-600 text-sm" data-bind="room.description">Random conversations, memes, and fun stuff</p>
+                            <div class="flex items-center text-xs text-gray-500 mt-2">
+                                <span data-bind="room.lastActivity">Last activity: 1 minute ago</span>
+                            </div>
+                        </div>
+                        <button data-event="click:joinRoom" data-room-id="random" class="bg-secondary hover:bg-secondary/90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                            Join Room
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_MAP )) -->
+
+            <!-- Create New Room Button -->
+            <div class="text-center">
+                <button data-event="click:createPublicRoom" class="bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-plus mr-2"></i>Create New Public Room
+                </button>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: PublicRoomsPage -->
+
+        <!-- @COMPONENT: PrivateRoomPage [Join private room interface] -->
+        <div id="private-room-page" class="container mx-auto px-4 py-8 max-w-md hidden">
+            <!-- Header with Back Button -->
+            <div class="flex items-center mb-8">
+                <button data-event="click:goHome" class="text-gray-500 hover:text-primary transition-colors duration-200 mr-4">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <div>
+                    <h2 class="text-2xl font-bold text-primary">Join Private Room</h2>
+                </div>
+            </div>
+
+            <!-- Join Room Form -->
+            <!-- @COMPONENT: PrivateRoomForm [Form to join private room] -->
+            <div class="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+                <div class="space-y-6">
+                    <!-- Room ID Input -->
+                    <div>
+                        <label for="roomId" class="block text-sm font-medium text-gray-700 mb-2">Room ID</label>
+                        <input 
+                            type="text" 
+                            id="roomId" 
+                            data-bind="roomId"
+                            placeholder="Enter room ID..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+                        >
+                    </div>
+
+                    <!-- Password Input (Optional) -->
+                    <div>
+                        <label for="roomPassword" class="block text-sm font-medium text-gray-700 mb-2">Password (if required)</label>
+                        <input 
+                            type="password" 
+                            id="roomPassword" 
+                            data-bind="roomPassword"
+                            placeholder="Enter password..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+                        >
+                    </div>
+
+                    <!-- Join Button -->
+                    <button data-event="click:joinPrivateRoom" class="w-full bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                        Join Room
+                    </button>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: PrivateRoomForm -->
+
+            <!-- Or Create New Room -->
+            <div class="text-center mt-8">
+                <p class="text-gray-600 mb-4">Don't have a room ID?</p>
+                <button data-event="click:createPrivateRoom" class="text-accent hover:text-accent/80 font-medium transition-colors duration-200">
+                    Create New Private Room
+                </button>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: PrivateRoomPage -->
+
+        <!-- @COMPONENT: ChatRoomPage [Main chat interface] -->
+        <div id="chat-room-page" class="flex flex-col h-screen hidden">
+            <!-- Chat Header -->
+            <!-- @COMPONENT: ChatHeader [Room info and controls] -->
+            <header class="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <button data-event="click:leaveRoom" class="text-gray-500 hover:text-primary transition-colors duration-200 md:hidden">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <div>
+                        <h2 class="text-lg font-semibold text-primary" data-bind="room.name">General Discussion</h2>
+                        <div class="flex items-center space-x-2 text-sm text-gray-600">
+                            <span class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                                <span data-bind="room.participants">12</span> online
+                            </span>
+                            <span data-bind="room.type">Public Room</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- Copy Room ID Button (for private rooms) -->
+                    <button data-event="click:copyRoomId" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                        <i class="fas fa-copy mr-1"></i>Copy ID
+                    </button>
+                    <!-- Leave Room Button (desktop) -->
+                    <button data-event="click:leaveRoom" class="hidden md:block bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Leave
+                    </button>
+                </div>
+            </header>
+            <!-- @END_COMPONENT: ChatHeader -->
+
+            <!-- Messages Area -->
+            <!-- @COMPONENT: MessagesArea [Scrollable messages container] -->
+            <main class="flex-1 overflow-y-auto p-4 bg-gray-50" data-implementation="Auto-scroll to bottom on new messages">
+                <div class="space-y-4 max-w-4xl mx-auto">
+                    
+                    <!-- @MAP: messages.map(message => ( -->
+                    <!-- System Message -->
+                    <!-- @COMPONENT: SystemMessage [System notifications] -->
+                    <div class="text-center">
+                        <span class="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full" data-bind="message.content">
+                            <span data-mock="true">Anonymous_User_123 joined the room</span>
+                        </span>
+                    </div>
+                    <!-- @END_COMPONENT: SystemMessage -->
+
+                    <!-- User Message -->
+                    <!-- @COMPONENT: UserMessage [Individual chat message] -->
+                    <div class="flex space-x-3">
+                        <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <span data-bind="message.user.avatar" data-mock="true">A</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-900 text-sm" data-bind="message.user.name" data-mock="true">Anonymous_Coder</span>
+                                <span class="text-xs text-gray-500" data-bind="message.timestamp" data-mock="true">2:30 PM</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                                <p class="text-gray-800" data-bind="message.content" data-mock="true">Hey everyone! Just joined this room. What are we discussing?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Code Message -->
+                    <div class="flex space-x-3">
+                        <div class="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <span data-bind="message.user.avatar" data-mock="true">D</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-900 text-sm" data-bind="message.user.name" data-mock="true">Dev_Master</span>
+                                <span class="text-xs text-gray-500" data-bind="message.timestamp" data-mock="true">2:32 PM</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                                <p class="text-gray-800 mb-2" data-bind="message.content" data-mock="true">Here's a quick JavaScript function:</p>
+                                <div class="bg-gray-900 rounded-lg p-3 text-sm">
+                                    <code class="text-green-400" data-mock="true">
+function greet(name) {<br>
+&nbsp;&nbsp;return `Hello, ${name}!`;<br>
+}
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Message -->
+                    <div class="flex space-x-3">
+                        <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <span data-bind="message.user.avatar" data-mock="true">M</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-900 text-sm" data-bind="message.user.name" data-mock="true">MemeLord</span>
+                                <span class="text-xs text-gray-500" data-bind="message.timestamp" data-mock="true">2:35 PM</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                                <p class="text-gray-800 mb-2" data-bind="message.content" data-mock="true">Check out this cool coding setup!</p>
+                                <!-- A clean modern coding workspace with multiple monitors -->
+                                <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
+                                     alt="Modern coding workspace setup" 
+                                     class="rounded-lg max-w-sm w-full h-auto"
+                                     data-mock-image="true" 
+                                     data-implementation="Display uploaded images here">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Another User Message -->
+                    <div class="flex space-x-3">
+                        <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                            <span data-bind="message.user.avatar" data-mock="true">R</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="font-medium text-gray-900 text-sm" data-bind="message.user.name" data-mock="true">RandomUser42</span>
+                                <span class="text-xs text-gray-500" data-bind="message.timestamp" data-mock="true">2:36 PM</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                                <p class="text-gray-800" data-bind="message.content" data-mock="true">Nice setup! I'm working on a React project right now. Anyone familiar with hooks?</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+
+                </div>
+            </main>
+            <!-- @END_COMPONENT: MessagesArea -->
+
+            <!-- Message Input -->
+            <!-- @COMPONENT: MessageInput [Message composition area] -->
+            <footer class="bg-white border-t border-gray-200 p-4">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex items-end space-x-3">
+                        <!-- File Upload Button -->
+                        <button data-event="click:uploadFile" class="text-gray-500 hover:text-accent transition-colors duration-200 p-2">
+                            <i class="fas fa-paperclip text-xl"></i>
+                        </button>
+                        
+                        <!-- Message Input -->
+                        <div class="flex-1 relative">
+                            <textarea 
+                                data-bind="messageText"
+                                placeholder="Type your message..." 
+                                rows="1"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent resize-none transition-all duration-200"
+                                data-implementation="Auto-expand on content, max 4 rows"
+                            ></textarea>
+                        </div>
+                        
+                        <!-- Send Button -->
+                        <button data-event="click:sendMessage" class="bg-accent hover:bg-accent/90 text-white p-3 rounded-lg transition-colors duration-200">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Typing Indicator -->
+                    <!-- @COMPONENT: TypingIndicator [Shows who's typing] -->
+                    <div class="mt-2 h-4">
+                        <p class="text-xs text-gray-500" data-bind="typingUsers" data-mock="true">
+                            <!-- Dev_Master is typing... -->
+                        </p>
+                    </div>
+                    <!-- @END_COMPONENT: TypingIndicator -->
+                </div>
+            </footer>
+            <!-- @END_COMPONENT: MessageInput -->
+        </div>
+        <!-- @END_COMPONENT: ChatRoomPage -->
+
+        <!-- @COMPONENT: CreateRoomModal [Modal for creating new rooms] -->
+        <div id="create-room-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden" data-implementation="Modal overlay">
+            <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-primary">Create New Room</h3>
+                    <button data-event="click:closeModal" class="text-gray-500 hover:text-primary transition-colors duration-200">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Room Name -->
+                    <div>
+                        <label for="newRoomName" class="block text-sm font-medium text-gray-700 mb-2">Room Name</label>
+                        <input 
+                            type="text" 
+                            id="newRoomName" 
+                            data-bind="newRoom.name"
+                            placeholder="Enter room name..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+                        >
+                    </div>
+
+                    <!-- Room Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="radio" name="roomType" value="public" data-bind="newRoom.type" class="text-accent focus:ring-accent mr-2">
+                                <span class="text-gray-700">Public Room</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="roomType" value="private" data-bind="newRoom.type" class="text-accent focus:ring-accent mr-2">
+                                <span class="text-gray-700">Private Room</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Password (for private rooms) -->
+                    <div data-show="newRoom.type === 'private'">
+                        <label for="newRoomPassword" class="block text-sm font-medium text-gray-700 mb-2">Password (Optional)</label>
+                        <input 
+                            type="password" 
+                            id="newRoomPassword" 
+                            data-bind="newRoom.password"
+                            placeholder="Enter password..."
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+                        >
+                    </div>
+
+                    <!-- Create Button -->
+                    <button data-event="click:createRoom" class="w-full bg-accent hover:bg-accent/90 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+                        Create Room
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: CreateRoomModal -->
+
+    </div>
+    <!-- @END_COMPONENT: App -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        (function() {
+            // Basic view management for mockup demonstration
+            const views = {
+                'home': document.getElementById('home-page'),
+                'public': document.getElementById('public-rooms-page'),
+                'private': document.getElementById('private-room-page'),
+                'chat': document.getElementById('chat-room-page'),
+                'modal': document.getElementById('create-room-modal')
+            };
+
+            let currentView = 'home';
+
+            function showView(viewName) {
+                // Hide all views
+                Object.values(views).forEach(view => {
+                    if (view) view.classList.add('hidden');
+                });
+                
+                // Show target view
+                if (views[viewName]) {
+                    views[viewName].classList.remove('hidden');
+                    currentView = viewName;
+                }
+            }
+
+            // Event handlers for navigation (mockup only)
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('button');
+                if (!target) return;
+
+                const event = target.getAttribute('data-event');
+                if (!event) return;
+
+                switch(event) {
+                    case 'click:showPublicRooms':
+                        showView('public');
+                        break;
+                    case 'click:showPrivateRooms':
+                        showView('private');
+                        break;
+                    case 'click:goHome':
+                        showView('home');
+                        break;
+                    case 'click:joinRoom':
+                    case 'click:joinPrivateRoom':
+                        showView('chat');
+                        // Update header for private room if needed
+                        if (event === 'click:joinPrivateRoom') {
+                            document.querySelector('#chat-room-page .hidden').classList.remove('hidden');
+                        }
+                        break;
+                    case 'click:createPublicRoom':
+                    case 'click:createPrivateRoom':
+                        views.modal.classList.remove('hidden');
+                        break;
+                    case 'click:closeModal':
+                        views.modal.classList.add('hidden');
+                        break;
+                    case 'click:leaveRoom':
+                        showView('home');
+                        break;
+                    case 'click:copyRoomId':
+                        // TODO: Implement copy to clipboard
+                        console.log('Copy room ID functionality');
+                        break;
+                    case 'click:sendMessage':
+                        // TODO: Implement message sending
+                        console.log('Send message functionality');
+                        break;
+                    case 'click:uploadFile':
+                        // TODO: Implement file upload
+                        console.log('File upload functionality');
+                        break;
+                }
+            });
+
+            // Auto-resize textarea (basic implementation)
+            document.addEventListener('input', function(e) {
+                if (e.target.tagName === 'TEXTAREA') {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }
+            });
+
+            // Initialize view
+            showView('home');
+        })();
+    </script>
+</body>
+</html>
