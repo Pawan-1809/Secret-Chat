@@ -1,4 +1,4 @@
-# 💬 CodeChat - Anonymous Real-time Chat
+# 💬 Secret Chat - Anonymous Real-time Chat
 <div>
 
 **🔥 Lightning-fast anonymous chat • No signup required • Real-time messaging**
@@ -6,13 +6,13 @@
 
 ---
 
-## 🌟 What is Code Bhej?
+## 🌟 What is Secret Chat?
 
 <div align="center">
 <img src="https://user-images.githubusercontent.com/74038190/212284087-bbe7e430-757e-4901-90bf-4cd2ce3e1852.gif" width="50">
 </div>
 
-**Code Bhej** is a modern, anonymous real-time chat application that brings people together without the hassle of registration. Built with cutting-edge technologies, it offers seamless communication in both public and private rooms.
+**Secret Chat** is a modern, anonymous real-time chat application that brings people together without the hassle of registration. Built with cutting-edge technologies, it offers seamless communication in both public and private rooms.
 
 <details>
 <summary>🎯 <strong>Click to see our mission</strong></summary>
