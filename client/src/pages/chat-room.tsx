@@ -17,6 +17,7 @@ export default function ChatRoom() {
   const [messageText, setMessageText] = useState("");
   const [username, setUsername] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const { toast } = useToast();
@@ -41,28 +42,41 @@ export default function ChatRoom() {
 
   // Join room on component mount
   useEffect(() => {
-    if (!roomId || !match) return;
+    if (!roomId || !match || hasJoined) return;
 
     const initializeRoom = async () => {
       try {
-        // Check if user is creator from URL params
+        // Check URL params
         const urlParams = new URLSearchParams(window.location.search);
         const isCreator = urlParams.get('creator') === 'true';
         const urlUsername = urlParams.get('username');
         
         if (isCreator && urlUsername) {
-          // Creator joining their own room
-          setUsername(urlUsername);
-          joinRoom(roomId, urlUsername);
+          // Creator joining their own room - no API call needed
+          console.log('Creator joining room directly:', roomId, urlUsername);
+          setUsername(decodeURIComponent(urlUsername));
+          joinRoom(roomId, decodeURIComponent(urlUsername));
+          setHasJoined(true);
+          // Clean up URL
+          window.history.replaceState({}, '', `/chat/${roomId}`);
+        } else if (urlUsername) {
+          // User already authenticated via private room page
+          console.log('Pre-authenticated user joining room:', roomId, urlUsername);
+          setUsername(decodeURIComponent(urlUsername));
+          joinRoom(roomId, decodeURIComponent(urlUsername));
+          setHasJoined(true);
           // Clean up URL
           window.history.replaceState({}, '', `/chat/${roomId}`);
         } else {
-          // Regular join flow
+          // Regular join flow for public rooms - make API call
+          console.log('Regular user joining room:', roomId);
           const response = await api.joinRoom(roomId);
           setUsername(response.username);
           joinRoom(roomId, response.username);
+          setHasJoined(true);
         }
       } catch (error: any) {
+        console.error('Failed to join room:', error);
         toast({
           title: "Failed to join room",
           description: error.message,
@@ -73,7 +87,7 @@ export default function ChatRoom() {
     };
 
     initializeRoom();
-  }, [roomId, match, joinRoom]);
+  }, [roomId, match, hasJoined, joinRoom]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;

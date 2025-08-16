@@ -59,7 +59,9 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
       queryClient.invalidateQueries({ queryKey: ["/api/rooms/public"] });
       
       // Navigate to the new room with creator flag
-      setLocation(`/chat/${result.room.id}?creator=true&username=${result.username}`);
+      const creatorUrl = `/chat/${result.room.id}?creator=true&username=${encodeURIComponent(result.username)}`;
+      console.log('Redirecting creator to:', creatorUrl);
+      setLocation(creatorUrl);
       onOpenChange(false);
       
       // Reset form

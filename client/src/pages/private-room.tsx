@@ -29,9 +29,14 @@ export default function PrivateRoom() {
 
     setIsJoining(true);
     try {
-      await api.joinRoom(roomId, password || undefined);
-      setLocation(`/chat/${roomId}`);
+      console.log('Attempting to join room:', roomId, 'with password:', !!password);
+      const response = await api.joinRoom(roomId, password || undefined);
+      console.log('Join successful:', response);
+      
+      // Store the username and navigate to chat
+      setLocation(`/chat/${roomId}?username=${encodeURIComponent(response.username)}`);
     } catch (error: any) {
+      console.error('Join failed:', error);
       toast({
         title: "Failed to join room",
         description: error.message || "Please check the room ID and password",

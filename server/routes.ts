@@ -81,9 +81,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { password, isCreator } = req.body;
       
+      console.log('Join attempt:', {
+        roomId: req.params.id,
+        roomType: room.type,
+        hasPassword: !!room.password,
+        providedPassword: !!password,
+        isCreator: !!isCreator
+      });
+      
       // Skip password check if user is the creator joining for the first time
       if (room.type === "private" && room.password && !isCreator) {
         if (password !== room.password) {
+          console.log('Password mismatch:', { provided: password, expected: room.password });
           return res.status(401).json({ message: "Invalid password" });
         }
       }
