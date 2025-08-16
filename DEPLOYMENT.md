@@ -1,47 +1,45 @@
-# Vercel Deployment Guide
+# Render Deployment Guide
 
 ## Overview
-This is a full-stack chat application with React frontend and Express backend, configured for Vercel deployment.
+This is a full-stack chat application with React frontend and Express backend, configured for Render deployment.
 
 ## Pre-deployment Checklist
-- [x] `vercel.json` configuration created
-- [x] API routes moved to `/api` directory
+- [x] `render.yaml` configuration created
+- [x] Server configured to bind to `0.0.0.0`
 - [x] Build scripts configured in `package.json`
 - [x] Environment variables documented
-- [x] `.vercelignore` file created
+- [x] Health check endpoint configured
 
-## Deployment Steps
+## Deployment Methods
 
-### 1. Install Vercel CLI (if not already installed)
-```bash
-npm i -g vercel
-```
+### Method 1: Using render.yaml (Recommended)
+1. Push your code to GitHub
+2. Connect your GitHub repo to Render
+3. Render will automatically detect `render.yaml` and configure deployment
 
-### 2. Login to Vercel
-```bash
-vercel login
-```
-
-### 3. Deploy to Vercel
-```bash
-vercel --prod
-```
+### Method 2: Manual Setup
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Use these settings:
+   - **Environment**: `Node`
+   - **Build Command**: `npm install && npm run build`
+   - **Start Command**: `npm start`
+   - **Plan**: `Free` (or paid plan for production)
 
 ## Environment Variables
-Set these in your Vercel dashboard under Project Settings > Environment Variables:
+Set these in your Render dashboard:
 
 - `NODE_ENV=production`
-- `SESSION_SECRET=your_secure_random_string`
-- Any database URLs if using external storage
+- `SESSION_SECRET=your_secure_random_string` (or let Render auto-generate)
 
 ## Project Structure
 ```
-├── api/                 # Vercel serverless functions
-│   └── index.ts        # Main API handler
 ├── client/             # React frontend
-├── server/             # Original server code (used by API)
+├── server/             # Express backend with Socket.IO
+├── shared/             # Shared types and schemas
 ├── dist/public/        # Built frontend (generated)
-└── vercel.json         # Vercel configuration
+├── render.yaml         # Render configuration
+└── package.json        # Dependencies and scripts
 ```
 
 ## Features
@@ -51,7 +49,8 @@ Set these in your Vercel dashboard under Project Settings > Environment Variable
 - Responsive UI with Tailwind CSS
 
 ## Notes
-- Socket.IO works with Vercel's serverless functions
+- Server binds to `0.0.0.0` for Render compatibility
+- Socket.IO works seamlessly with Render's infrastructure
 - The app uses in-memory storage - consider upgrading to a database for production
-- All API routes are prefixed with `/api`
-- Frontend is served as static files from `/dist/public`
+- Health check endpoint: `/api/rooms/public`
+- Render provides automatic HTTPS and custom domains
