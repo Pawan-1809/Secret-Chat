@@ -1,0 +1,83 @@
+You are an expert full-stack web developer skilled in building real-time, privacy-focused chat applications. Your task is to create a complete, production-ready anonymous chat web app called "Code Bhej". The application should have the following features, design style, and technical requirements:
+
+Core Concept:
+
+Anonymous Usage: No sign-up, no login — users can instantly join chats without creating an account.
+
+Two Chat Modes:
+
+Public Chat Rooms – Accessible instantly by clicking from a list of active public rooms.
+
+Private Chat Rooms – Joinable by entering a unique Room ID; can optionally be password-protected.
+
+Message Types: Text, images, code snippets, or any other message type supported via drag & drop or file upload.
+
+Features:
+
+Instant Room Creation: A button to create a new public or private room instantly.
+
+Room ID Generator: Auto-generate unique IDs for private rooms.
+
+Optional Password Protection: If set, the user must enter the password before joining the room.
+
+Real-Time Messaging: Instant send/receive without page refresh using WebSockets (Socket.IO or similar).
+
+Media Support: Send/receive images and files directly in chat.
+
+Message Display: Each message should show timestamp and file preview (for images).
+
+No Data Storage on Server: Only store temporary messages in memory or a volatile DB (like Redis) for real-time purposes. Messages are deleted when a room is closed or after a set inactivity period.
+
+Cross-Device: Works smoothly on both desktop and mobile browsers.
+
+UI/UX Requirements:
+
+Clean, minimal, distraction-free interface.
+
+Simple home page with two big options: Join Public Chat or Join Private Chat.
+
+Public chat list: Shows available active rooms with live participant count.
+
+Private chat: Input box for Room ID + Password (if required).
+
+In-room UI:
+
+Chat messages area (scrollable, with auto-scroll on new message).
+
+Message input box with send button + image/file upload icon.
+
+Room name & participant count visible at the top.
+
+“Copy Room ID” button for sharing.
+
+Tech Stack Preference:
+
+Frontend: HTML5, CSS3, JavaScript (React.js or Next.js preferred), Tailwind CSS for styling.
+
+Backend: Node.js + Express.js.
+
+Real-Time Communication: Socket.IO or WebSockets.
+
+Temporary Storage: Redis (for ephemeral chat data).
+
+Deployment: Can be deployed on Vercel/Netlify (frontend) and Render/Heroku (backend) or as a full-stack app on a single VPS.
+
+Extra Details:
+
+Ensure minimal latency for real-time messaging.
+
+Protect against spam with basic rate limiting.
+
+Responsive layout optimized for mobile first.
+
+Include a simple random username generator for users who haven’t set one.
+
+Deliverables:
+
+Fully functional web app with separate frontend & backend (or monolithic if simpler).
+
+Clean, documented code with clear file structure.
+
+Minimalistic and intuitive UI.
+
+Instructions for running locally and deploying online.
