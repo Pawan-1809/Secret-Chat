@@ -1,4 +1,4 @@
-# 💬 Code Bhej - Anonymous Real-time Chat
+# 💬 CodeChat - Anonymous Real-time Chat
 <div>
 
 **🔥 Lightning-fast anonymous chat • No signup required • Real-time messaging**
