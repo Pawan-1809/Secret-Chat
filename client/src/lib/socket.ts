@@ -8,7 +8,8 @@ export class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
-    const url = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
+    // Always use the same origin as the current page
+    const url = window.location.origin;
     console.log("🔗 Connecting to Socket.IO server at:", url);
     this.socket = io(url, {
       transports: ['websocket', 'polling'],
