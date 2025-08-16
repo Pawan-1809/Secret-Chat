@@ -18,7 +18,7 @@ export interface IStorage {
   // Participant methods
   addParticipant(participant: InsertParticipant): Promise<Participant>;
   removeParticipant(id: string): Promise<void>;
-  removeParticipantBySocket(socketId: string): Promise<void>;
+  removeParticipantBySocket(socketId: string): Promise<Participant | null>;
   getRoomParticipants(roomId: string): Promise<Participant[]>;
   updateParticipantSocket(participantId: string, socketId: string): Promise<void>;
 }
@@ -54,8 +54,10 @@ export class MemStorage implements IStorage {
   async createRoom(insertRoom: InsertRoom): Promise<Room> {
     const id = randomUUID().slice(0, 8); // Short ID for easy sharing
     const room: Room = {
-      ...insertRoom,
       id,
+      name: insertRoom.name,
+      type: insertRoom.type,
+      password: insertRoom.password ?? null,
       createdAt: new Date(),
       participantCount: 0,
       lastActivity: new Date(),
@@ -125,8 +127,11 @@ export class MemStorage implements IStorage {
   async addMessage(insertMessage: InsertMessage): Promise<Message> {
     const id = randomUUID();
     const message: Message = {
-      ...insertMessage,
       id,
+      roomId: insertMessage.roomId,
+      username: insertMessage.username,
+      content: insertMessage.content,
+      type: insertMessage.type ?? "text",
       timestamp: new Date(),
     };
 
@@ -178,13 +183,16 @@ export class MemStorage implements IStorage {
     }
   }
 
-  async removeParticipantBySocket(socketId: string): Promise<void> {
+  async removeParticipantBySocket(socketId: string): Promise<Participant | null> {
     const participant = Array.from(this.participants.values())
       .find(p => p.socketId === socketId);
     
     if (participant) {
       await this.removeParticipant(participant.id);
+      return participant;
     }
+    
+    return null;
   }
 
   async getRoomParticipants(roomId: string): Promise<Participant[]> {

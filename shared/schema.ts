@@ -40,6 +40,8 @@ export const insertRoomSchema = createInsertSchema(rooms).omit({
 export const insertMessageSchema = createInsertSchema(messages).omit({
   id: true,
   timestamp: true,
+}).extend({
+  type: z.enum(["text", "image", "file", "system"]).default("text"),
 });
 
 export const insertParticipantSchema = createInsertSchema(participants).omit({

@@ -159,12 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Remove participant and notify room
-        const participants = await storage.getRoomParticipants("");
-        const participant = participants.find(p => p.socketId === socket.id);
+        const participant = await storage.removeParticipantBySocket(socket.id);
         
         if (participant) {
-          await storage.removeParticipantBySocket(socket.id);
-          
           const room = await storage.getRoomWithParticipants(participant.roomId);
           
           // Notify room about user leaving

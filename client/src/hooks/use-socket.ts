@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { socketService } from "@/lib/socket";
-import type { Message, Room, Participant } from "@shared/schema";
+import type { Message, Room, Participant, RoomWithParticipants } from "@shared/schema";
 
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -17,7 +17,7 @@ export function useSocket() {
     const handleConnected = () => setIsConnected(true);
     const handleDisconnected = () => setIsConnected(false);
     
-    const handleRoomJoined = (data: { room: Room; participant: Participant }) => {
+    const handleRoomJoined = (data: { room: RoomWithParticipants; participant: Participant }) => {
       setCurrentRoom(data.room);
       setParticipant(data.participant);
       setMessages(data.room.messages || []);
