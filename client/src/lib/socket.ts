@@ -9,16 +9,21 @@ export class SocketService {
     if (this.socket?.connected) return;
 
     const url = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
-    this.socket = io(url);
+    console.log("🔗 Connecting to Socket.IO server at:", url);
+    this.socket = io(url, {
+      transports: ['websocket', 'polling'],
+      timeout: 20000,
+      forceNew: true
+    });
 
     // Set up event listeners
     this.socket.on("connect", () => {
-      console.log("Connected to server");
+      console.log("✅ Socket.IO: Connected to server with ID:", this.socket?.id);
       this.emit("connected");
     });
 
-    this.socket.on("disconnect", () => {
-      console.log("Disconnected from server");
+    this.socket.on("disconnect", (reason) => {
+      console.log("❌ Socket.IO: Disconnected from server. Reason:", reason);
       this.emit("disconnected");
     });
 
@@ -43,7 +48,12 @@ export class SocketService {
     });
 
     this.socket.on("error", (error: { message: string }) => {
+      console.error("🚨 Socket.IO Error:", error);
       this.emit("error", error);
+    });
+
+    this.socket.on("connect_error", (error) => {
+      console.error("🚨 Socket.IO Connection Error:", error);
     });
   }
 

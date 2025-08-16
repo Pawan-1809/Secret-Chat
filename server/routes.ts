@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Socket.IO for real-time communication
   io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
+    console.log("✅ Socket.IO: User connected:", socket.id);
 
     socket.on("join-room", async (data) => {
       try {
@@ -155,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     socket.on("disconnect", async () => {
-      console.log("User disconnected:", socket.id);
+      console.log("❌ Socket.IO: User disconnected:", socket.id);
       
       try {
         // Remove participant and notify room
