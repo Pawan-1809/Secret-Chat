@@ -45,9 +45,23 @@ export default function ChatRoom() {
 
     const initializeRoom = async () => {
       try {
-        const response = await api.joinRoom(roomId);
-        setUsername(response.username);
-        joinRoom(roomId, response.username);
+        // Check if user is creator from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const isCreator = urlParams.get('creator') === 'true';
+        const urlUsername = urlParams.get('username');
+        
+        if (isCreator && urlUsername) {
+          // Creator joining their own room
+          setUsername(urlUsername);
+          joinRoom(roomId, urlUsername);
+          // Clean up URL
+          window.history.replaceState({}, '', `/chat/${roomId}`);
+        } else {
+          // Regular join flow
+          const response = await api.joinRoom(roomId);
+          setUsername(response.username);
+          joinRoom(roomId, response.username);
+        }
       } catch (error: any) {
         toast({
           title: "Failed to join room",
@@ -59,7 +73,7 @@ export default function ChatRoom() {
     };
 
     initializeRoom();
-  }, [roomId, match, joinRoom, setLocation, toast]);
+  }, [roomId, match, joinRoom]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;

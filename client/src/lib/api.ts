@@ -21,8 +21,8 @@ export const api = {
   },
 
   // Join room
-  joinRoom: async (roomId: string, password?: string) => {
-    const res = await apiRequest("POST", `/api/rooms/${roomId}/join`, { password });
+  joinRoom: async (roomId: string, password?: string, isCreator?: boolean) => {
+    const res = await apiRequest("POST", `/api/rooms/${roomId}/join`, { password, isCreator });
     return res.json();
   },
 };

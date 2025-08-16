@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { socketService } from "@/lib/socket";
 import type { Message, Room, Participant, RoomWithParticipants } from "@shared/schema";
 
@@ -86,9 +86,9 @@ export function useSocket() {
     };
   }, []);
 
-  const joinRoom = (roomId: string, username: string) => {
+  const joinRoom = useCallback((roomId: string, username: string) => {
     socketService.joinRoom(roomId, username);
-  };
+  }, []);
 
   const sendMessage = (content: string, type: string = "text") => {
     if (currentRoom && participant) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,29 +24,48 @@ interface CreateRoomModalProps {
 export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateRoomModalProps) {
   const [, setLocation] = useLocation();
   const [roomName, setRoomName] = useState("");
+  const [useCustomName, setUseCustomName] = useState(false);
   const [roomType, setRoomType] = useState(type);
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Auto-generate room name
+  const generateRoomName = () => {
+    const adjectives = ["Awesome", "Cool", "Fun", "Epic", "Great", "Super", "Amazing", "Brilliant"];
+    const nouns = ["Chat", "Room", "Space", "Hub", "Lounge", "Corner", "Zone", "Place"];
+    const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    const randomNum = Math.floor(Math.random() * 100);
+    return `${randomAdj} ${randomNoun} ${randomNum}`;
+  };
+
+  // Set auto-generated name when modal opens
+  useEffect(() => {
+    if (open && !useCustomName) {
+      setRoomName(generateRoomName());
+    }
+  }, [open, useCustomName]);
+
   const createRoomMutation = useMutation({
     mutationFn: (room: InsertRoom) => api.createRoom(room),
-    onSuccess: (room) => {
+    onSuccess: (result) => {
       toast({
         title: "Room created successfully!",
-        description: `Room "${room.name}" has been created.`,
+        description: `Room "${result.room.name}" has been created.`,
       });
       
       // Invalidate public rooms cache
       queryClient.invalidateQueries({ queryKey: ["/api/rooms/public"] });
       
-      // Navigate to the new room
-      setLocation(`/chat/${room.id}`);
+      // Navigate to the new room with creator flag
+      setLocation(`/chat/${result.room.id}?creator=true&username=${result.username}`);
       onOpenChange(false);
       
       // Reset form
       setRoomName("");
       setPassword("");
+      setUseCustomName(false);
     },
     onError: (error: any) => {
       toast({
@@ -60,17 +79,19 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!roomName.trim()) {
+    const finalRoomName = useCustomName ? roomName.trim() : (roomName || generateRoomName());
+    
+    if (!finalRoomName) {
       toast({
         title: "Error",
-        description: "Please enter a room name",
+        description: "Room name is required",
         variant: "destructive",
       });
       return;
     }
 
     createRoomMutation.mutate({
-      name: roomName.trim(),
+      name: finalRoomName,
       type: roomType,
       password: roomType === "private" && password ? password : null,
     });
@@ -88,18 +109,42 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Room Name */}
           <div>
-            <Label htmlFor="roomName" className="text-sm font-medium text-gray-700">
-              Room Name
-            </Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-medium text-gray-700">
+                Room Name
+              </Label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="useCustomName"
+                  checked={useCustomName}
+                  onChange={(e) => {
+                    setUseCustomName(e.target.checked);
+                    if (!e.target.checked) {
+                      setRoomName(generateRoomName());
+                    }
+                  }}
+                  className="rounded"
+                />
+                <Label htmlFor="useCustomName" className="text-xs text-gray-600">
+                  Custom name
+                </Label>
+              </div>
+            </div>
             <Input
               id="roomName"
               type="text"
-              placeholder="Enter room name..."
+              placeholder={useCustomName ? "Enter custom room name..." : "Auto-generated"}
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
-              className="mt-2"
-              required
+              disabled={!useCustomName}
+              className={`mt-1 ${!useCustomName ? 'bg-gray-50 text-gray-600' : ''}`}
             />
+            {!useCustomName && (
+              <p className="text-xs text-gray-500 mt-1">
+                A unique room name will be auto-generated
+              </p>
+            )}
           </div>
 
           {/* Room Type */}

@@ -55,7 +55,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const roomData = insertRoomSchema.parse(req.body);
       const room = await storage.createRoom(roomData);
-      res.status(201).json(room);
+      
+      // Generate a username for the creator and return join info
+      const username = generateUsername();
+      res.status(201).json({ 
+        room, 
+        username,
+        isCreator: true 
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid room data", errors: error.errors });
@@ -72,8 +79,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Room not found" });
       }
 
-      if (room.type === "private" && room.password) {
-        const { password } = req.body;
+      const { password, isCreator } = req.body;
+      
+      // Skip password check if user is the creator joining for the first time
+      if (room.type === "private" && room.password && !isCreator) {
         if (password !== room.password) {
           return res.status(401).json({ message: "Invalid password" });
         }
