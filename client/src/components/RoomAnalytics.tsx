@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { MessageSquare, Users, Activity, TrendingUp } from 'lucide-react';
+import { MessageSquare, Users, Activity, TrendingUp, RefreshCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 interface AnalyticsData {
@@ -17,6 +17,7 @@ interface RoomAnalyticsProps {
 export function RoomAnalytics({ roomId }: RoomAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchAnalytics();
@@ -31,6 +32,7 @@ export function RoomAnalytics({ roomId }: RoomAnalyticsProps) {
       console.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -81,16 +83,29 @@ export function RoomAnalytics({ roomId }: RoomAnalyticsProps) {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2 mb-6">
-        <TrendingUp className="w-6 h-6 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Analytics
-        </h2>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Room analytics</h2>
+            <p className="text-xs text-muted-foreground">Live snapshot (manual refresh)</p>
+          </div>
+        </div>
+        <button
+          onClick={() => { setRefreshing(true); fetchAnalytics(); }}
+          disabled={refreshing}
+          className="inline-flex items-center text-xs font-medium rounded-md border px-3 py-2 hover:bg-muted disabled:opacity-50"
+        >
+          <RefreshCcw className={`w-3.5 h-3.5 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -114,21 +129,21 @@ export function RoomAnalytics({ roomId }: RoomAnalyticsProps) {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Bar Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle>Analytics - Bar Chart</CardTitle>
-            <CardDescription>Room activity overview</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Key metrics</CardTitle>
+            <CardDescription>Relative values</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#3B82F6" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }} />
+                <Bar dataKey="value" fill="#3B82F6" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -136,30 +151,38 @@ export function RoomAnalytics({ roomId }: RoomAnalyticsProps) {
 
         {/* Pie Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle>Analytics - Distribution</CardTitle>
-            <CardDescription>Activity breakdown</CardDescription>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Distribution</CardTitle>
+            <CardDescription>Share by metric</CardDescription>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={90}
+                    dataKey="value"
+                    paddingAngle={4}
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <ul className="mt-4 space-y-1 text-xs">
+                {chartData.map(c => (
+                  <li key={c.name} className="flex items-center justify-between">
+                    <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: c.color }} />{c.name}</span>
+                    <span>{c.value}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
         </Card>
       </div>
     </div>

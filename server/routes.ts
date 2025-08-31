@@ -217,6 +217,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         io.to(roomId).emit("new-message", systemMessage);
 
+        // Bot greeting message
+        try {
+          const botGreeting = await storage.addMessage({
+            roomId,
+            username: "Bot",
+            content: `Welcome ${username}! 👋 .`,
+            type: "text"
+          });
+          io.to(roomId).emit("new-message", botGreeting);
+        } catch (greetErr) {
+          console.error("Failed to send bot greeting:", greetErr);
+        }
+
       } catch (error) {
         socket.emit("error", { message: "Failed to join room" });
       }
@@ -229,6 +242,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Broadcast message to room
         io.to(messageData.roomId).emit("new-message", message);
+        
+        // Bot auto-response: only react to non-bot messages
+        if (message.username !== "Bot" && message.type === "text") {
+          try {
+            const botResponses = await storage.getBotResponses();
+            if (botResponses.length) {
+              const lower = message.content.toLowerCase();
+              const match = botResponses.find(br => lower.includes(br.trigger.toLowerCase()));
+              if (match) {
+                const botMessage = await storage.addMessage({
+                  roomId: messageData.roomId,
+                  username: "Bot",
+                  content: match.response,
+                  type: "text"
+                });
+                io.to(messageData.roomId).emit("new-message", botMessage);
+              }
+            }
+          } catch (botErr) {
+            console.error("Bot response error:", botErr);
+          }
+        }
         
       } catch (error) {
         socket.emit("error", { message: "Failed to send message" });

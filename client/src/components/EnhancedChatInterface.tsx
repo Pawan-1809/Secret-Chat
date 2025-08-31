@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, Settings, BarChart3, Bot, Moon, Sun, Image as ImageIcon, File as FileIcon, Loader2 } from 'lucide-react';
+import { Send, Paperclip, Mic, BarChart3, Bot, Moon, Sun, Image as ImageIcon, File as FileIcon, Loader2, Bell, BellOff, AtSign } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
+// Removed Sheet components after replacing Bot & Settings panels with dialogs
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from './ui/dialog';
 import { FilePreview } from './FileUpload';
 import { VoiceRecorder, VoiceMessage } from './VoiceRecorder';
 import { RoomAnalytics } from './RoomAnalytics';
 import { BotManager } from './BotManager';
 import { useTheme } from '../contexts/ThemeContext';
+import { PushNotifications, registerServiceWorker, triggerLocalNotification } from './PushNotifications';
 
 interface Message {
   id: string;
@@ -49,12 +51,86 @@ export function EnhancedChatInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showMediaMenu, setShowMediaMenu] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false); // default muted
+  const [swRegistered, setSwRegistered] = useState(false);
+  // Mention autocomplete state
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!swRegistered) {
+      registerServiceWorker()?.finally(() => setSwRegistered(true));
+    }
+  }, [swRegistered]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Fire a notification for new incoming messages if enabled and tab not focused
+  useEffect(() => {
+    if (!notificationsEnabled) return;
+    if (!messages.length) return;
+    const last = messages[messages.length - 1];
+    if (last.username === username) return; // don't notify own messages
+    if (document.visibilityState === 'visible' && document.hasFocus()) return; // only when not actively viewing
+    // Basic mention prioritization
+    const isMention = new RegExp(`@${username.replace(/[-/\\^$*+?.()|[\]{}]/g, '')}\\b`, 'i').test(last.content || '');
+    const title = isMention ? `Mentioned by ${last.username}` : `New message in room ${roomId}`;
+    const body = last.type === 'text' ? last.content : last.type === 'image' ? `${last.username} sent an image` : last.type === 'voice' ? `${last.username} sent a voice message` : `${last.username} sent a file`;
+    triggerLocalNotification(title, body);
+  }, [messages, notificationsEnabled, roomId, username]);
+
+  // Mention helpers
+  const filteredMentions = () => {
+    if (!showMentions) return [] as string[];
+    const names = participants.map((p:any)=>p.username).filter((n:string)=> n && n !== username);
+    return names.filter((n:string)=> n.toLowerCase().startsWith(mentionQuery.toLowerCase()));
+  };
+
+  const detectMention = (value: string, cursor: number) => {
+    const slice = value.slice(0, cursor);
+    const atPos = slice.lastIndexOf('@');
+    if (atPos === -1) { setShowMentions(false); return; }
+    const between = slice.slice(atPos + 1);
+    if (/\s/.test(between)) { setShowMentions(false); return; }
+    if (atPos > 0 && !/\s/.test(slice[atPos-1])) { setShowMentions(false); return; }
+    setMentionQuery(between);
+    setShowMentions(true);
+    setMentionIndex(0);
+  };
+
+  const insertMention = (name: string) => {
+    if (!inputRef.current) return;
+    const el = inputRef.current;
+    const cursor = el.selectionStart || 0;
+    const value = messageInput;
+    const slice = value.slice(0, cursor);
+    const atPos = slice.lastIndexOf('@');
+    if (atPos === -1) return;
+    const before = value.slice(0, atPos);
+    const after = value.slice(cursor);
+    const insertion = `@${name} `;
+    const newVal = before + insertion + after;
+    setMessageInput(newVal);
+    setShowMentions(false);
+    requestAnimationFrame(()=>{
+      const pos = before.length + insertion.length;
+      el.focus();
+      el.setSelectionRange(pos,pos);
+    });
+  };
+
   const handleSendMessage = (uploadedFile?: any) => {
+    if (showMentions) {
+      const list = filteredMentions();
+      if (list.length) {
+        insertMention(list[mentionIndex]);
+        return;
+      }
+    }
     const fileObj = uploadedFile || selectedFile;
     if (!messageInput.trim() && !fileObj) return;
 
@@ -123,106 +199,133 @@ export function EnhancedChatInterface({
     }
   };
 
-  const renderMessage = (message: Message) => {
-  const displayContent = message.content;
+  const renderMessage = (message: Message, index: number) => {
+  const mentionRegex = new RegExp(`@${username.replace(/[-/\\^$*+?.()|[\]{}]/g, '')}\\b`, 'i');
+  const isMention = mentionRegex.test(message.content || '');
+  const displayContent = (message.content || '').replace(mentionRegex, (m) => `<span class="text-primary font-semibold">${m}</span>`);
 
     const isOwnMessage = message.username === username;
-    const messageClass = `flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`;
-    const bubbleClass = `max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-      isOwnMessage 
-        ? 'bg-blue-500 text-white' 
-        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-    }`;
+    const previous = index > 0 ? messages[index - 1] : null;
+    const previousSameUser = previous && previous.username === message.username;
+    const previousRecent = previous && Math.abs(new Date(message.timestamp).getTime() - new Date(previous.timestamp).getTime()) < 5 * 60 * 1000; // 5 min window
+    const isGroupStart = !(previousSameUser && previousRecent);
+    const showUsername = !isOwnMessage && isGroupStart;
+  const messageClass = `w-full flex ${isOwnMessage ? 'justify-end' : 'justify-start'} ${isGroupStart ? 'mt-4' : 'mt-0.5'}`;
+    const bubbleBase = 'relative group rounded-2xl px-3 py-2 shadow-sm max-w-[78%] break-words text-sm';
+    const bubblePalette = isOwnMessage
+      ? 'bg-primary text-primary-foreground rounded-tr-sm'
+      : isMention
+        ? 'bg-accent text-foreground ring-2 ring-primary/50 rounded-tl-sm'
+        : 'bg-muted text-foreground rounded-tl-sm';
+    const bubbleGrouped = !isGroupStart && !isOwnMessage ? 'rounded-tl-xl' : '';
+    const bubbleGroupedSelf = !isGroupStart && isOwnMessage ? 'rounded-tr-xl' : '';
+    const bubbleClass = `${bubbleBase} ${bubblePalette} ${bubbleGrouped} ${bubbleGroupedSelf}`;
+    const time = new Date(message.timestamp);
+    const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     return (
       <div key={message.id} className={messageClass}>
+        {!isOwnMessage && (
+          <div className="mr-2 w-8 flex justify-center flex-shrink-0">
+            {showUsername ? (
+              <div className="h-8 w-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-semibold select-none">
+                {message.username.charAt(0).toUpperCase()}
+              </div>
+            ) : (
+              // Invisible spacer to keep subsequent grouped bubbles aligned
+              <div className="h-8 w-8" />
+            )}
+          </div>
+        )}
         <div className={bubbleClass}>
-          {message.type === 'system' && (
-            <p className="text-sm italic text-center text-gray-500">{displayContent}</p>
-          )}
-          
-          {message.type === 'text' && (
-            <div>
-              <p className="text-sm font-medium mb-1">{message.username}</p>
-              <p>{displayContent}</p>
-            </div>
-          )}
-          
-          {message.type === 'image' && (
-            <div>
-              <p className="text-sm font-medium mb-2">{message.username}</p>
-              <a href={message.fileUrl} target="_blank" rel="noopener noreferrer">
-                <img 
-                  src={message.fileUrl} 
-                  alt={message.fileName}
-                  className="max-w-full h-auto rounded cursor-pointer hover:opacity-90 transition"
-                  loading="lazy"
+            {message.type === 'system' && (
+              <p className="text-xs italic text-center opacity-70">{displayContent}</p>
+            )}
+            {message.type === 'text' && (
+              <div>
+                {showUsername && <p className="text-[11px] font-semibold mb-0.5 opacity-80 tracking-wide">{message.username}</p>}
+                <div className="leading-relaxed" dangerouslySetInnerHTML={{ __html: displayContent }} />
+              </div>
+            )}
+            {message.type === 'image' && (
+              <div className="space-y-1">
+                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+                <div className="relative overflow-hidden rounded-lg group/image">
+                  <a href={message.fileUrl} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={message.fileUrl}
+                      alt={message.fileName}
+                      className="max-h-72 rounded-md object-cover hover:brightness-95 transition"
+                      loading="lazy"
+                    />
+                  </a>
+                  <span className="absolute bottom-1 right-2 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white opacity-90">
+                    {timeStr}
+                  </span>
+                </div>
+                {message.fileName && <p className="text-[10px] opacity-60">{message.fileName}</p>}
+              </div>
+            )}
+            {message.type === 'file' && (
+              <div className="space-y-1">
+                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+                <a
+                  href={message.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                  download={message.fileName}
+                >
+                  <FilePreview
+                    file={{
+                      originalName: message.fileName || '',
+                      filename: message.fileName || '',
+                      mimetype: message.mimeType || '',
+                      size: message.fileSize || 0,
+                      url: message.fileUrl || '',
+                      isImage: false
+                    }}
+                  />
+                </a>
+              </div>
+            )}
+            {message.type === 'voice' && (
+              <div className="space-y-1">
+                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+                <VoiceMessage
+                  audioUrl={message.fileUrl || ''}
+                  duration={(message as any).duration || 0}
+                  username={message.username}
+                  timestamp={message.timestamp}
                 />
-              </a>
-              <p className="text-xs mt-1 opacity-75">{message.fileName}</p>
-            </div>
-          )}
-          
-          {message.type === 'file' && (
-            <div>
-              <p className="text-sm font-medium mb-2">{message.username}</p>
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
-                download={message.fileName}
-              >
-                <FilePreview 
-                  file={{
-                    originalName: message.fileName || '',
-                    filename: message.fileName || '',
-                    mimetype: message.mimeType || '',
-                    size: message.fileSize || 0,
-                    url: message.fileUrl || '',
-                    isImage: false
-                  }}
-                />
-              </a>
-            </div>
-          )}
-          
-          {message.type === 'voice' && (
-            <div>
-              <p className="text-sm font-medium mb-2">{message.username}</p>
-              <VoiceMessage
-                audioUrl={message.fileUrl || ''}
-                duration={(message as any).duration || 0}
-                username={message.username}
-                timestamp={message.timestamp}
-              />
-              <a
-                href={message.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs underline mt-1 inline-block opacity-75"
-                download={message.fileName}
-              >Download voice</a>
-            </div>
-          )}
-          
-          <p className="text-xs mt-1 opacity-75">
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </p>
-        </div>
+                <a
+                  href={message.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] underline inline-block opacity-70"
+                  download={message.fileName}
+                >Download voice</a>
+              </div>
+            )}
+            {/* Timestamp (for non-image types) */}
+            {message.type !== 'image' && (
+              <span className="block text-[10px] mt-1 text-right opacity-60 leading-none select-none">{timeStr}</span>
+            )}
+  </div>
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-background">
+      <PushNotifications roomId={roomId} username={username} enabled={notificationsEnabled} />
       {/* Header */}
-  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-gray-900/80">
+  <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center space-x-2">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 className="text-lg font-semibold">
             Room {roomId}
           </h2>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-sm text-muted-foreground">
             {participants.length} participants
           </span>
         </div>
@@ -237,86 +340,62 @@ export function EnhancedChatInterface({
           >
             {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
           </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setNotificationsEnabled(v => !v)}
+            title={notificationsEnabled ? 'Mute notifications' : 'Enable notifications'}
+          >
+            {notificationsEnabled ? <Bell className="w-4 h-4 text-primary" /> : <BellOff className="w-4 h-4" />}
+          </Button>
           
-          {/* Room Analytics Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" title="Room analytics">
+          {/* Room Analytics Modal */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" title="Room analytics (popup)">
                 <BarChart3 className="w-4 h-4" />
               </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader>
-                <SheetTitle>Room analytics</SheetTitle>
-                <SheetDescription>View room statistics and usage data</SheetDescription>
-              </SheetHeader>
-              <div className="mt-6">
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl w-full p-0 overflow-hidden">
+              <DialogHeader className="px-6 pt-6 pb-2 border-b">
+                <DialogTitle>Room analytics</DialogTitle>
+                <DialogDescription>Overview of current room activity</DialogDescription>
+              </DialogHeader>
+              <div className="px-6 pb-6 pt-4 max-h-[70vh] overflow-y-auto">
                 <RoomAnalytics roomId={roomId} />
               </div>
-            </SheetContent>
-          </Sheet>
+            </DialogContent>
+          </Dialog>
           
-          {/* Bot Manager Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" title="Bot manager">
+          {/* Bot Manager Modal (converted to dialog like analytics) */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm" title="Bot manager (popup)">
                 <Bot className="w-4 h-4" />
               </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader>
-                <SheetTitle>Bot manager</SheetTitle>
-                <SheetDescription>Manage automated bot responses</SheetDescription>
-              </SheetHeader>
-              <div className="mt-6">
+            </DialogTrigger>
+            <DialogContent className="max-w-5xl w-full p-0 overflow-hidden">
+              <DialogHeader className="px-6 pt-6 pb-2 border-b">
+                <DialogTitle>Bot manager</DialogTitle>
+                <DialogDescription>Manage automated bot responses</DialogDescription>
+              </DialogHeader>
+              <div className="px-6 pb-6 pt-4 max-h-[70vh] overflow-y-auto">
                 <BotManager />
               </div>
-            </SheetContent>
-          </Sheet>
-          
-          {/* Settings Button */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="sm" title="Settings">
-                <Settings className="w-4 h-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="w-[400px] sm:w-[540px]">
-              <SheetHeader>
-                <SheetTitle>Settings</SheetTitle>
-                <SheetDescription>Manage room settings and features</SheetDescription>
-              </SheetHeader>
-              <Tabs defaultValue="analytics" className="mt-6">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="analytics">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Analytics
-                  </TabsTrigger>
-                  <TabsTrigger value="bot">
-                    <Bot className="w-4 h-4 mr-2" />
-                    Bot
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="analytics" className="mt-4">
-                  <RoomAnalytics roomId={roomId} />
-                </TabsContent>
-                <TabsContent value="bot" className="mt-4">
-                  <BotManager />
-                </TabsContent>
-              </Tabs>
-            </SheetContent>
-          </Sheet>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.map(renderMessage)}
+  <div className="flex-1 overflow-y-auto p-4 space-y-2">
+  {messages.map((m,i) => renderMessage(m,i))}
         
         {typingUsers.length > 0 && (
           <div className="flex justify-start mb-4">
-            <div className="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="bg-muted px-4 py-2 rounded-lg">
+              <p className="text-sm text-muted-foreground">
                 {typingUsers.join(', ')} typing...
               </p>
             </div>
@@ -327,7 +406,7 @@ export function EnhancedChatInterface({
       </div>
 
       {/* Sticky Input / Attachments Area */}
-      <div className="sticky bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 dark:supports-[backdrop-filter]:bg-gray-900/80 border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
+  <div className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-t border-border p-4 space-y-3">
         {selectedFile && (
           <FilePreview
             file={selectedFile}
@@ -441,14 +520,46 @@ export function EnhancedChatInterface({
             <Mic className="w-4 h-4" />
           </Button>
           
-          {/* Message Input */}
-          <Input
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            placeholder={'Type a message'}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            className="flex-1"
-          />
+          {/* Message Input with @mention autocomplete */}
+          <div className="relative flex-1">
+            <Input
+              ref={inputRef}
+              value={messageInput}
+              placeholder={'Type a message'}
+              onChange={(e) => {
+                setMessageInput(e.target.value);
+                const el = e.target as HTMLInputElement;
+                detectMention(e.target.value, el.selectionStart || 0);
+              }}
+              onKeyDown={(e) => {
+                if (showMentions) {
+                  if (e.key === 'ArrowDown') { e.preventDefault(); const list = filteredMentions(); if (list.length) setMentionIndex(i => (i + 1) % list.length); }
+                  else if (e.key === 'ArrowUp') { e.preventDefault(); const list = filteredMentions(); if (list.length) setMentionIndex(i => (i - 1 + list.length) % list.length); }
+                  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); const list = filteredMentions(); if (list.length) insertMention(list[mentionIndex]); }
+                  else if (e.key === 'Escape') { setShowMentions(false); }
+                } else if (e.key === 'Enter') {
+                  handleSendMessage();
+                }
+              }}
+              className="pr-2"
+            />
+            {showMentions && (
+              <div className="absolute bottom-full mb-2 left-0 w-56 max-h-56 overflow-y-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md z-40 animate-in fade-in zoom-in-95">
+                {filteredMentions().length ? filteredMentions().map((name, idx) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => insertMention(name)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground ${idx === mentionIndex ? 'bg-accent text-accent-foreground' : ''}`}
+                  >
+                    {name}
+                  </button>
+                )) : (
+                  <div className="px-3 py-2 text-xs text-muted-foreground">No matches</div>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* Send Message Button */}
           <Button 
@@ -461,18 +572,15 @@ export function EnhancedChatInterface({
         </div>
         
         {/* Feature Status Bar */}
-  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+  <div className="flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center space-x-4">
-            <span className="flex items-center">
-              <Paperclip className="w-3 h-3 mr-1" /> Media
-            </span>
-            <span className="flex items-center">
-              <Mic className="w-3 h-3 mr-1" /> Voice
-            </span>
+            <span className="flex items-center"><Paperclip className="w-3 h-3 mr-1" /> Media</span>
+            <span className="flex items-center"><Mic className="w-3 h-3 mr-1" /> Voice</span>
+            <span className="flex items-center"><AtSign className="w-3 h-3 mr-1" /> Mention</span>
           </div>
           <div className="text-right">
             {selectedFile && (
-              <span className="text-blue-600 dark:text-blue-400">
+              <span className="text-primary">
                 File selected: {selectedFile.originalName}
               </span>
             )}
