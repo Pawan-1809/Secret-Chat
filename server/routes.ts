@@ -174,6 +174,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Chat (Gemini) endpoint
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return res.status(503).json({ message: "AI not configured" });
+      const { messages } = req.body as { messages: { role: string; content: string }[] };
+      if (!Array.isArray(messages) || !messages.length) {
+        return res.status(400).json({ message: "messages array required" });
+      }
+      // Transform to Gemini format
+      const contents = messages.map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content.slice(0, 4000) }]
+      })).slice(-20); // keep last 20
+      const body = {
+        contents,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
+      };
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        return res.status(500).json({ message: 'Gemini request failed', detail: errText.slice(0,500) });
+      }
+      const data: any = await resp.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+      res.json({ reply });
+    } catch (e:any) {
+      res.status(500).json({ message: "AI error", error: e?.message });
+    }
+  });
+
   // Socket.IO for real-time communication
   io.on("connection", (socket) => {
     console.log("✅ Socket.IO: User connected:", socket.id);

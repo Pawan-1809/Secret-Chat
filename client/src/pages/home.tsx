@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CreateRoomModal } from "@/components/create-room-modal";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useState } from "react";
+import { AIChatWidget } from "@/components/AIChatWidget";
 
 export default function Home() {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -76,6 +77,9 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+        {/* AI Chatbot floating widget (landing page only) */}
+        <AIChatWidget />
 
       <CreateRoomModal
         open={showCreateModal}

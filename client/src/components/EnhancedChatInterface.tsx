@@ -11,6 +11,7 @@ import { RoomAnalytics } from './RoomAnalytics';
 import { BotManager } from './BotManager';
 import { useTheme } from '../contexts/ThemeContext';
 import { PushNotifications, registerServiceWorker, triggerLocalNotification } from './PushNotifications';
+// AI Chatbot only used on landing page now
 
 interface Message {
   id: string;
@@ -590,3 +591,5 @@ export function EnhancedChatInterface({
     </div>
   );
 }
+
+// Mount global AI widget
