@@ -54,27 +54,27 @@ export default function PrivateRoom() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground transition-colors">
       <div className="container mx-auto px-4 py-8 max-w-md">
         {/* Header with Back Button */}
         <div className="flex items-center mb-8">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-slate-700 mr-4">
+            <Button variant="ghost" size="sm" className="mr-4">
               <ArrowLeft size={20} />
             </Button>
           </Link>
           <div>
-            <h2 className="text-2xl font-bold text-slate-700">Join Private Room</h2>
+            <h2 className="text-2xl font-bold">Join Private Room</h2>
           </div>
         </div>
 
         {/* Join Room Form */}
-        <Card className="shadow-lg border-gray-100">
+        <Card className="shadow-lg">
           <CardContent className="p-8">
             <div className="space-y-6">
               {/* Room ID Input */}
               <div>
-                <Label htmlFor="roomId" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="roomId" className="text-sm font-medium">
                   Room ID
                 </Label>
                 <Input
@@ -90,7 +90,7 @@ export default function PrivateRoom() {
 
               {/* Password Input */}
               <div>
-                <Label htmlFor="roomPassword" className="text-sm font-medium text-gray-700">
+                <Label htmlFor="roomPassword" className="text-sm font-medium">
                   Password (if required)
                 </Label>
                 <Input
@@ -105,11 +105,7 @@ export default function PrivateRoom() {
               </div>
 
               {/* Join Button */}
-              <Button
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                onClick={handleJoinRoom}
-                disabled={isJoining}
-              >
+        <Button className="w-full" onClick={handleJoinRoom} disabled={isJoining}>
                 {isJoining ? "Joining..." : "Join Room"}
               </Button>
             </div>
@@ -118,12 +114,8 @@ export default function PrivateRoom() {
 
         {/* Or Create New Room */}
         <div className="text-center mt-8">
-          <p className="text-gray-600 mb-4">Don't have a room ID?</p>
-          <Button
-            variant="link"
-            className="text-blue-500 hover:text-blue-600"
-            onClick={() => setShowCreateModal(true)}
-          >
+      <p className="text-muted-foreground mb-4">Don't have a room ID?</p>
+      <Button variant="link" onClick={() => setShowCreateModal(true)}>
             Create New Private Room
           </Button>
         </div>

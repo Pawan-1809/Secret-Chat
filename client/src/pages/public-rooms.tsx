@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateRoomModal } from "@/components/create-room-modal";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { api } from "@/lib/api";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
@@ -23,19 +24,22 @@ export default function PublicRooms() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground transition-colors">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header with Back Button */}
-        <div className="flex items-center mb-8">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-slate-700 mr-4">
-              <ArrowLeft size={20} />
-            </Button>
-          </Link>
-          <div>
-            <h2 className="text-3xl font-bold text-slate-700">Public Chat Rooms</h2>
-            <p className="text-gray-600">Join any active conversation instantly</p>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div className="flex items-center">
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="mr-4">
+                <ArrowLeft size={20} />
+              </Button>
+            </Link>
+            <div>
+              <h2 className="text-3xl font-bold">Public Chat Rooms</h2>
+              <p className="text-sm text-muted-foreground">Join any active conversation instantly</p>
+            </div>
           </div>
+          <ThemeSwitcher />
         </div>
 
         {/* Loading State */}
@@ -65,27 +69,24 @@ export default function PublicRooms() {
         {rooms && (
           <div className="space-y-4 mb-8">
             {rooms.map((room) => (
-              <Card key={room.id} className="hover:shadow-lg transition-shadow duration-200 border-gray-100">
+              <Card key={room.id} className="hover:shadow-lg transition-shadow duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-slate-700">{room.name}</h3>
-                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full flex items-center">
-                          <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                        <h3 className="text-lg font-semibold">{room.name}</h3>
+                        <span className="bg-primary/10 text-primary text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                          <span className="w-2 h-2 bg-primary rounded-full mr-1"></span>
                           <Users size={12} className="mr-1" />
                           {room.participantCount} online
                         </span>
                       </div>
-                      <div className="flex items-center text-xs text-gray-500 mt-2">
+                      <div className="flex items-center text-xs text-muted-foreground mt-2">
                         <Clock size={12} className="mr-1" />
                         <span>Last activity: {formatDistanceToNow(new Date(room.lastActivity))} ago</span>
                       </div>
                     </div>
-                    <Button
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                      onClick={() => handleJoinRoom(room.id)}
-                    >
+                    <Button onClick={() => handleJoinRoom(room.id)}>
                       Join Room
                     </Button>
                   </div>
@@ -96,13 +97,9 @@ export default function PublicRooms() {
             {rooms.length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
-                  <p className="text-gray-500 mb-4">No public rooms available</p>
-                  <Button
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
-                    onClick={() => setShowCreateModal(true)}
-                  >
-                    <Plus className="mr-2" size={16} />
-                    Create First Room
+                  <p className="text-muted-foreground mb-4">No public rooms available</p>
+                  <Button onClick={() => setShowCreateModal(true)}>
+                    <Plus className="mr-2" size={16} /> Create First Room
                   </Button>
                 </CardContent>
               </Card>
@@ -113,12 +110,8 @@ export default function PublicRooms() {
         {/* Create New Room Button */}
         {rooms && rooms.length > 0 && (
           <div className="text-center">
-            <Button
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="mr-2" size={16} />
-              Create New Public Room
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="mr-2" size={16} /> Create New Public Room
             </Button>
           </div>
         )}

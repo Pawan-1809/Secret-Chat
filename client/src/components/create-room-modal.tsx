@@ -101,9 +101,9 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+    <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-slate-700">
+      <DialogTitle className="text-xl font-semibold">
             Create New Room
           </DialogTitle>
         </DialogHeader>
@@ -112,7 +112,7 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
           {/* Room Name */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <Label className="text-sm font-medium text-gray-700">
+              <Label className="text-sm font-medium">
                 Room Name
               </Label>
               <div className="flex items-center space-x-2">
@@ -128,7 +128,7 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
                   }}
                   className="rounded"
                 />
-                <Label htmlFor="useCustomName" className="text-xs text-gray-600">
+                <Label htmlFor="useCustomName" className="text-xs text-muted-foreground">
                   Custom name
                 </Label>
               </div>
@@ -140,10 +140,10 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
               disabled={!useCustomName}
-              className={`mt-1 ${!useCustomName ? 'bg-gray-50 text-gray-600' : ''}`}
+              className={`mt-1 ${!useCustomName ? 'opacity-80' : ''}`}
             />
             {!useCustomName && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 A unique room name will be auto-generated
               </p>
             )}
@@ -151,7 +151,7 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
 
           {/* Room Type */}
           <div>
-            <Label className="text-sm font-medium text-gray-700">Room Type</Label>
+      <Label className="text-sm font-medium">Room Type</Label>
             <RadioGroup
               value={roomType}
               onValueChange={(value: "public" | "private") => setRoomType(value)}
@@ -159,11 +159,11 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="public" id="public" />
-                <Label htmlFor="public" className="text-gray-700">Public Room</Label>
+        <Label htmlFor="public">Public Room</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="private" id="private" />
-                <Label htmlFor="private" className="text-gray-700">Private Room</Label>
+        <Label htmlFor="private">Private Room</Label>
               </div>
             </RadioGroup>
           </div>
@@ -171,7 +171,7 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
           {/* Password (for private rooms) */}
           {roomType === "private" && (
             <div>
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label htmlFor="password" className="text-sm font-medium">
                 Password (Optional)
               </Label>
               <Input
@@ -186,11 +186,7 @@ export function CreateRoomModal({ open, onOpenChange, type = "public" }: CreateR
           )}
 
           {/* Create Button */}
-          <Button
-            type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-            disabled={createRoomMutation.isPending}
-          >
+          <Button type="submit" className="w-full" disabled={createRoomMutation.isPending}>
             {createRoomMutation.isPending ? "Creating..." : "Create Room"}
           </Button>
         </form>

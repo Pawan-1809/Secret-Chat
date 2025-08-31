@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -63,18 +63,33 @@
 
 /* Custom animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideIn {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .animate-fade-in {
@@ -153,7 +168,7 @@
 }
 
 .notification-badge::after {
-  content: '';
+  content: "";
   position: absolute;
   top: -2px;
   right: -2px;
@@ -190,7 +205,7 @@
 }
 
 .bot-message::before {
-  content: '🤖';
+  content: "🤖";
   position: absolute;
   top: -8px;
   left: 8px;
@@ -204,7 +219,7 @@
 }
 
 .encrypted-message::after {
-  content: '🔒';
+  content: "🔒";
   position: absolute;
   top: 4px;
   right: 4px;
@@ -223,11 +238,11 @@
   .message-bubble {
     max-width: 85%;
   }
-  
+
   .file-upload-area {
     padding: 1rem;
   }
-  
+
   .voice-recorder-controls {
     flex-direction: column;
     gap: 0.5rem;
@@ -247,8 +262,12 @@
 }
 
 @keyframes loading {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Focus states for accessibility */
@@ -262,7 +281,7 @@
   .message-bubble {
     border: 2px solid currentColor;
   }
-  
+
   .file-upload-area {
     border-width: 2px;
   }
@@ -294,8 +313,8 @@
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(27 87% 67%);
   --radius: 0.5rem;
-  --font-family: 'Inter', sans-serif;
-  
+  --font-family: "Inter", sans-serif;
+
   /* Custom colors matching design */
   --slate-700: hsl(214 31% 22%);
   --emerald-500: hsl(159 64% 39%);
@@ -336,6 +355,54 @@
   --chart-3: hsl(30 80% 55%);
   --chart-4: hsl(280 65% 60%);
   --chart-5: hsl(340 75% 55%);
+}
+
+/* Color Schemes (light) */
+[data-color-scheme="emerald"] :root,
+:root[data-color-scheme="emerald"] {
+  --primary: hsl(159 64% 39%);
+  --primary-foreground: hsl(210 40% 98%);
+  --accent: hsl(158 64% 36%);
+}
+[data-color-scheme="blue"] :root,
+:root[data-color-scheme="blue"] {
+  --primary: hsl(217 91% 60%);
+  --primary-foreground: hsl(210 40% 98%);
+  --accent: hsl(220 92% 56%);
+}
+[data-color-scheme="violet"] :root,
+:root[data-color-scheme="violet"] {
+  --primary: hsl(262 83% 58%);
+  --primary-foreground: hsl(0 0% 100%);
+  --accent: hsl(263 70% 50%);
+}
+[data-color-scheme="rose"] :root,
+:root[data-color-scheme="rose"] {
+  --primary: hsl(340 82% 52%);
+  --primary-foreground: hsl(0 0% 100%);
+  --accent: hsl(340 75% 55%);
+}
+
+/* Color Schemes (dark) */
+.dark[data-color-scheme="emerald"],
+.dark [data-color-scheme="emerald"] {
+  --primary: hsl(159 64% 39%);
+  --primary-foreground: hsl(222.2 47.4% 11.2%);
+}
+.dark[data-color-scheme="blue"],
+.dark [data-color-scheme="blue"] {
+  --primary: hsl(217 91% 60%);
+  --primary-foreground: hsl(222.2 47.4% 11.2%);
+}
+.dark[data-color-scheme="violet"],
+.dark [data-color-scheme="violet"] {
+  --primary: hsl(262 83% 58%);
+  --primary-foreground: hsl(0 0% 100%);
+}
+.dark[data-color-scheme="rose"],
+.dark [data-color-scheme="rose"] {
+  --primary: hsl(340 82% 52%);
+  --primary-foreground: hsl(0 0% 100%);
 }
 
 @layer base {
