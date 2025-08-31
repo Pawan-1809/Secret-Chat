@@ -1,7 +1,59 @@
-node_modules
-dist
+############################
+# Dependencies & Builds
+############################
+node_modules/
+dist/
+.vite/
+
+############################
+# Environment / Secrets
+############################
+.env
+.env.local
+.env.*.local
+
+############################
+# Runtime Uploaded Data (do not version user content)
+############################
+uploads/files/
+uploads/images/
+
+############################
+# Logs & Diagnostics
+############################
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# Caches / Tooling
+############################
+.eslintcache
+.turbo/
+.parcel-cache/
+.cache/
+coverage/
+
+############################
+# OS / Editor
+############################
 .DS_Store
-server/public
-vite.config.ts.*
+Thumbs.db
+.vscode/
+
+############################
+# Build / Deploy Artifacts
+############################
 *.tar.gz
 .vercel
+
+############################
+# Misc (local assets / temp)
+############################
+attached_assets/
+
+# Keep any existing pattern below (legacy)
+server/public
+vite.config.ts.*

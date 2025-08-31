@@ -70,7 +70,33 @@ export class SocketService {
   }
 
   sendMessage(roomId: string, username: string, content: string, type: string = "text") {
+    // Legacy simple text/file send (kept for backward compatibility)
     this.socket?.emit("send-message", { roomId, username, content, type });
+  }
+
+  sendMessageFull(message: {
+    roomId: string;
+    username: string;
+    content: string;
+    type?: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    isEncrypted?: boolean;
+  }) {
+    // Emits full rich message payload including file / voice metadata
+    this.socket?.emit("send-message", {
+      roomId: message.roomId,
+      username: message.username,
+      content: message.content,
+      type: message.type || "text",
+      fileUrl: message.fileUrl,
+      fileName: message.fileName,
+      fileSize: message.fileSize,
+      mimeType: message.mimeType,
+      isEncrypted: message.isEncrypted || false,
+    });
   }
 
   sendTyping(roomId: string, username: string, isTyping: boolean) {

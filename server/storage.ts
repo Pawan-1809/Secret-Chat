@@ -1,4 +1,4 @@
-import { type Room, type InsertRoom, type Message, type InsertMessage, type Participant, type InsertParticipant, type RoomWithParticipants, type PublicRoomSummary } from "@shared/schema";
+import { type Room, type InsertRoom, type Message, type InsertMessage, type Participant, type InsertParticipant, type RoomWithParticipants, type PublicRoomSummary, type RoomAnalytics, type PushSubscription, type BotResponse } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -21,6 +21,12 @@ export interface IStorage {
   removeParticipantBySocket(socketId: string): Promise<Participant | null>;
   getRoomParticipants(roomId: string): Promise<Participant[]>;
   updateParticipantSocket(participantId: string, socketId: string): Promise<void>;
+  
+  // New feature methods
+  savePushSubscription(userId: string, subscription: any): Promise<void>;
+  getRoomAnalytics(roomId: string): Promise<RoomAnalytics>;
+  getBotResponses(): Promise<BotResponse[]>;
+  addBotResponse(trigger: string, response: string): Promise<BotResponse>;
 }
 
 export class MemStorage implements IStorage {
@@ -28,12 +34,18 @@ export class MemStorage implements IStorage {
   private messages: Map<string, Message[]>;
   private participants: Map<string, Participant>;
   private roomParticipants: Map<string, Set<string>>; // roomId -> participantIds
+  private pushSubscriptions: Map<string, PushSubscription>;
+  private roomAnalytics: Map<string, RoomAnalytics>;
+  private botResponses: Map<string, BotResponse>;
 
   constructor() {
     this.rooms = new Map();
     this.messages = new Map();
     this.participants = new Map();
     this.roomParticipants = new Map();
+    this.pushSubscriptions = new Map();
+    this.roomAnalytics = new Map();
+    this.botResponses = new Map();
     
     // Initialize with some default public rooms
     this.initializeDefaultRooms();
@@ -132,6 +144,11 @@ export class MemStorage implements IStorage {
       username: insertMessage.username,
       content: insertMessage.content,
       type: insertMessage.type ?? "text",
+      fileUrl: insertMessage.fileUrl ?? null,
+      fileName: insertMessage.fileName ?? null,
+      fileSize: insertMessage.fileSize ?? null,
+      mimeType: insertMessage.mimeType ?? null,
+      isEncrypted: insertMessage.isEncrypted ?? false,
       timestamp: new Date(),
     };
 
@@ -207,6 +224,54 @@ export class MemStorage implements IStorage {
     if (participant) {
       participant.socketId = socketId;
     }
+  }
+
+  // New feature implementations
+  async savePushSubscription(userId: string, subscription: any): Promise<void> {
+    const id = randomUUID();
+    const pushSub: PushSubscription = {
+      id,
+      userId,
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+      createdAt: new Date(),
+    };
+    this.pushSubscriptions.set(id, pushSub);
+  }
+
+  async getRoomAnalytics(roomId: string): Promise<RoomAnalytics> {
+    const messages = this.messages.get(roomId) || [];
+    const participants = this.roomParticipants.get(roomId) || new Set();
+    
+    const analytics: RoomAnalytics = {
+      id: randomUUID(),
+      roomId,
+      messageCount: messages.length,
+      participantCount: participants.size,
+      activeUsers: participants.size, // Simplified - all participants are considered active
+      date: new Date(),
+    };
+    
+    this.roomAnalytics.set(analytics.id, analytics);
+    return analytics;
+  }
+
+  async getBotResponses(): Promise<BotResponse[]> {
+    return Array.from(this.botResponses.values()).filter(br => br.isActive);
+  }
+
+  async addBotResponse(trigger: string, response: string): Promise<BotResponse> {
+    const id = randomUUID();
+    const botResponse: BotResponse = {
+      id,
+      trigger,
+      response,
+      isActive: true,
+      createdAt: new Date(),
+    };
+    this.botResponses.set(id, botResponse);
+    return botResponse;
   }
 }
 

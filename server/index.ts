@@ -65,6 +65,8 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
   }, () => {
-    log(`serving on http://0.0.0.0:${port}`);
+    log(`Server running on:`);
+    log(`  Local:   http://localhost:${port}`);
+    log(`  Network: http://127.0.0.1:${port}`);
   });
 })();

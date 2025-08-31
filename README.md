@@ -6,18 +6,32 @@
 
 ---
 
-## 🌟 What is Secret Chat?
+### Image Sharing
+- Drag & drop image upload with preview
+- Automatic image optimization and compression
+- Support for JPEG, PNG, GIF, and WebP formats
+- Real-time image sharing in chat rooms
 
-<div align="center">
-<img src="https://user-images.githubusercontent.com/74038190/212284087-bbe7e430-757e-4901-90bf-4cd2ce3e1852.gif" width="50">
-</div>
+### File Transfer
+- Upload and share documents, PDFs, and other files
+- Progress indicators during file upload
+- File size and type validation
+- Support for up to 10MB file uploads
 
-**Secret Chat** is a modern, anonymous real-time chat application that brings people together without the hassle of registration. Built with cutting-edge technologies, it offers seamless communication in both public and private rooms.
+### Dark Mode
+- Beautiful dark/light theme toggle
+- System preference detection
+- Persistent theme settings
+- Smooth theme transitions
 
-<details>
-<summary>🎯 <strong>Click to see our mission</strong></summary>
-<br>
-<div align="center">
+### Multi-language Support
+- International support for 4 languages:
+  - English
+  - Spanish (Español)
+  - French (Français)
+  - German (Deutsch)
+- Automatic language detection
+- Easy language switching
 <img src="https://user-images.githubusercontent.com/74038190/212284158-e840e285-664b-44d7-b79b-e264b5e54825.gif" width="200">
 </div>
 <blockquote>

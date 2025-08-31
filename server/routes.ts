@@ -1,9 +1,12 @@
-import type { Express } from "express";
+import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { insertRoomSchema, insertMessageSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
+import { upload, processImage, getFileMetadata } from "./upload";
+import path from "path";
+import fs from "fs/promises";
 
 function generateUsername(): string {
   const adjectives = ["Anonymous", "Coding", "Random", "Silent", "Quick", "Clever", "Smart", "Cool"];
@@ -101,6 +104,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, username });
     } catch (error) {
       res.status(500).json({ message: "Failed to join room" });
+    }
+  });
+
+  // File upload endpoint
+  app.post("/api/upload", upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const metadata = getFileMetadata(req.file);
+      let filePath = req.file.path;
+
+      // Process images
+      if (metadata.isImage) {
+        filePath = await processImage(filePath);
+        metadata.filename = path.basename(filePath);
+      }
+
+      // Generate file URL
+      const fileUrl = `/uploads/${metadata.isImage ? 'images' : 'files'}/${metadata.filename}`;
+
+      res.json({
+        success: true,
+        file: {
+          ...metadata,
+          url: fileUrl
+        }
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
+  });
+
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // Push notifications removed
+
+  // Room analytics
+  app.get("/api/rooms/:id/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getRoomAnalytics(req.params.id);
+      res.json(analytics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Bot responses management
+  app.get("/api/bot/responses", async (req, res) => {
+    try {
+      const responses = await storage.getBotResponses();
+      res.json(responses);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bot responses" });
+    }
+  });
+
+  app.post("/api/bot/responses", async (req, res) => {
+    try {
+      const { trigger, response } = req.body;
+      const botResponse = await storage.addBotResponse(trigger, response);
+      res.json(botResponse);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to add bot response" });
     }
   });
 

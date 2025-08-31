@@ -96,6 +96,30 @@ export function useSocket() {
     }
   };
 
+  const sendMessageFull = (message: {
+    content: string;
+    type?: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    isEncrypted?: boolean;
+  }) => {
+    if (currentRoom && participant) {
+      socketService.sendMessageFull({
+        roomId: currentRoom.id,
+        username: participant.username,
+        content: message.content,
+        type: message.type,
+        fileUrl: message.fileUrl,
+        fileName: message.fileName,
+        fileSize: message.fileSize,
+        mimeType: message.mimeType,
+        isEncrypted: message.isEncrypted,
+      });
+    }
+  };
+
   const sendTyping = (isTyping: boolean) => {
     if (currentRoom && participant) {
       socketService.sendTyping(currentRoom.id, participant.username, isTyping);
@@ -120,7 +144,8 @@ export function useSocket() {
     typingUsers,
     joinRoom,
     sendMessage,
-    sendTyping,
+  sendTyping,
+  sendMessageFull,
     leaveRoom,
   };
 }
