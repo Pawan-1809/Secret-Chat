@@ -48,6 +48,10 @@ export class SocketService {
       this.emit("user-typing", data);
     });
 
+    this.socket.on("message-deleted", (data: { messageId: string }) => {
+      this.emit("message-deleted", data);
+    });
+
     this.socket.on("error", (error: { message: string }) => {
       console.error("🚨 Socket.IO Error:", error);
       this.emit("error", error);
@@ -101,6 +105,10 @@ export class SocketService {
 
   sendTyping(roomId: string, username: string, isTyping: boolean) {
     this.socket?.emit("typing", { roomId, username, isTyping });
+  }
+
+  deleteMessage(roomId: string, messageId: string, username: string) {
+    this.socket?.emit("delete-message", { roomId, messageId, username });
   }
 
   on(event: string, callback: Function) {

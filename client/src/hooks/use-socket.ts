@@ -28,6 +28,10 @@ export function useSocket() {
       setMessages(prev => [...prev, message]);
     };
 
+    const handleMessageDeleted = (data: { messageId: string }) => {
+      setMessages(prev => prev.filter(m => m.id !== data.messageId));
+    };
+
     const handleUserJoined = (data: { username: string; participantCount: number }) => {
       setParticipantCount(data.participantCount);
     };
@@ -70,6 +74,7 @@ export function useSocket() {
     socketService.on("user-joined", handleUserJoined);
     socketService.on("user-left", handleUserLeft);
     socketService.on("user-typing", handleUserTyping);
+  socketService.on("message-deleted", handleMessageDeleted);
 
     return () => {
       socketService.off("connected", handleConnected);
@@ -79,6 +84,7 @@ export function useSocket() {
       socketService.off("user-joined", handleUserJoined);
       socketService.off("user-left", handleUserLeft);
       socketService.off("user-typing", handleUserTyping);
+  socketService.off("message-deleted", handleMessageDeleted);
       
       // Clear all typing timeouts
       typingTimeouts.current.forEach(timeout => clearTimeout(timeout));
@@ -135,6 +141,12 @@ export function useSocket() {
     setTypingUsers([]);
   };
 
+  const deleteMessage = (roomId: string, messageId: string) => {
+    if (currentRoom && participant) {
+      socketService.deleteMessage(roomId, messageId, participant.username);
+    }
+  };
+
   return {
     isConnected,
     currentRoom,
@@ -146,6 +158,7 @@ export function useSocket() {
     sendMessage,
   sendTyping,
   sendMessageFull,
+  deleteMessage,
     leaveRoom,
   };
 }

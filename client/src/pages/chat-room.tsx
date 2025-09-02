@@ -28,6 +28,7 @@ export default function ChatRoom() {
     sendMessageFull,
     sendTyping,
     leaveRoom,
+  deleteMessage,
   } = useSocket();
 
   // Scrolling is handled inside EnhancedChatInterface
@@ -184,6 +185,7 @@ export default function ChatRoom() {
           onSendMessage={handleSendMessage}
           participants={[{ username, id: username }]}
           typingUsers={typingUsers}
+          onDeleteMessage={(id) => deleteMessage(roomId, id)}
         />
       </div>
     </div>

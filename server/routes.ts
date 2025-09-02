@@ -29,6 +29,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // REST API Routes
+  // Simple Gemini AI chat endpoint
+  app.get('/api/ai/status', (req, res) => {
+    const ok = !!process.env.GEMINI_API_KEY;
+    res.json({ configured: ok });
+  });
+
+  app.post('/api/ai/chat', async (req, res) => {
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        console.warn('[AI] GEMINI_API_KEY missing');
+        return res.status(503).json({ message: 'AI not configured' });
+      }
+  console.log('[AI] Using key len:', apiKey.length);
+      const { messages } = req.body as { messages: { role: string; content: string }[] };
+      const systemPrompt = 'You are a concise, helpful general purpose assistant inside a minimal anonymous chat app landing page. Keep answers short (<=120 words) and friendly.';
+      const history = messages?.slice(-8) || [];
+      const lastUser = history.filter(m=>m.role==='user').pop();
+      const payload = {
+        contents: [
+          { role: 'user', parts: [{ text: systemPrompt }] },
+          ...history.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+        ]
+      };
+      console.log('[AI] Request -> history turns:', history.length, 'lastUserLen:', lastUser?.content.length || 0);
+      const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(()=>({}));
+        console.error('[AI] Gemini API error status', resp.status, err);
+        return res.status(500).json({ message: 'Gemini request failed', status: resp.status, error: err });
+      }
+      const data = await resp.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.map((p:any)=>p.text).join('\n') || 'Sorry, I could not generate a reply.';
+      res.json({ reply });
+    } catch (e:any) {
+      console.error('[AI] Unexpected error', e);
+      res.status(500).json({ message: 'AI error', error: e.message });
+    }
+  });
   
   // Get public rooms
   app.get("/api/rooms/public", async (req, res) => {
@@ -174,41 +217,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Chat (Gemini) endpoint
-  app.post("/api/ai/chat", async (req, res) => {
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) return res.status(503).json({ message: "AI not configured" });
-      const { messages } = req.body as { messages: { role: string; content: string }[] };
-      if (!Array.isArray(messages) || !messages.length) {
-        return res.status(400).json({ message: "messages array required" });
-      }
-      // Transform to Gemini format
-      const contents = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content.slice(0, 4000) }]
-      })).slice(-20); // keep last 20
-      const body = {
-        contents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 512 }
-      };
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!resp.ok) {
-        const errText = await resp.text();
-        return res.status(500).json({ message: 'Gemini request failed', detail: errText.slice(0,500) });
-      }
-      const data: any = await resp.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
-      res.json({ reply });
-    } catch (e:any) {
-      res.status(500).json({ message: "AI error", error: e?.message });
-    }
-  });
-
   // Socket.IO for real-time communication
   io.on("connection", (socket) => {
     console.log("✅ Socket.IO: User connected:", socket.id);
@@ -310,6 +318,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: data.username,
         isTyping: data.isTyping
       });
+    });
+
+    socket.on("delete-message", async (data: { roomId: string; messageId: string; username: string }) => {
+      try {
+        const removed = await storage.deleteMessage(data.roomId, data.messageId);
+        if (removed) {
+          io.to(data.roomId).emit("message-deleted", { messageId: data.messageId });
+        } else {
+          socket.emit("error", { message: "Message not found" });
+        }
+      } catch (err) {
+        socket.emit("error", { message: "Failed to delete message" });
+      }
     });
 
     socket.on("disconnect", async () => {

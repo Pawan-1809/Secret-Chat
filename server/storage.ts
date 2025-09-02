@@ -14,6 +14,7 @@ export interface IStorage {
   // Message methods
   addMessage(message: InsertMessage): Promise<Message>;
   getRoomMessages(roomId: string, limit?: number): Promise<Message[]>;
+  deleteMessage(roomId: string, messageId: string): Promise<Message | null>;
   
   // Participant methods
   addParticipant(participant: InsertParticipant): Promise<Participant>;
@@ -165,6 +166,15 @@ export class MemStorage implements IStorage {
   async getRoomMessages(roomId: string, limit = 50): Promise<Message[]> {
     const messages = this.messages.get(roomId) || [];
     return messages.slice(-limit);
+  }
+
+  async deleteMessage(roomId: string, messageId: string): Promise<Message | null> {
+    const list = this.messages.get(roomId) || [];
+    const idx = list.findIndex(m => m.id === messageId);
+    if (idx === -1) return null;
+    const [removed] = list.splice(idx, 1);
+    this.messages.set(roomId, list);
+    return removed;
   }
 
   async addParticipant(insertParticipant: InsertParticipant): Promise<Participant> {

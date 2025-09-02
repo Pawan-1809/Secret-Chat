@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Mic, BarChart3, Bot, Moon, Sun, Image as ImageIcon, File as FileIcon, Loader2, Bell, BellOff, AtSign } from 'lucide-react';
+import { Send, Paperclip, Mic, BarChart3, Bot, Moon, Sun, Image as ImageIcon, File as FileIcon, Loader2, Bell, BellOff, AtSign, MoreVertical } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
@@ -11,7 +11,7 @@ import { RoomAnalytics } from './RoomAnalytics';
 import { BotManager } from './BotManager';
 import { useTheme } from '../contexts/ThemeContext';
 import { PushNotifications, registerServiceWorker, triggerLocalNotification } from './PushNotifications';
-// AI Chatbot only used on landing page now
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './ui/dropdown-menu';
 
 interface Message {
   id: string;
@@ -33,6 +33,7 @@ interface EnhancedChatInterfaceProps {
   onSendMessage: (message: any) => void;
   participants: any[];
   typingUsers: string[];
+  onDeleteMessage?: (id: string) => void; // optional delete handler provided by parent
 }
 
 export function EnhancedChatInterface({
@@ -41,7 +42,8 @@ export function EnhancedChatInterface({
   messages,
   onSendMessage,
   participants,
-  typingUsers
+  typingUsers,
+  onDeleteMessage
 }: EnhancedChatInterfaceProps) {
   const { theme, toggleTheme } = useTheme();
   const [messageInput, setMessageInput] = useState('');
@@ -58,7 +60,7 @@ export function EnhancedChatInterface({
   const [mentionQuery, setMentionQuery] = useState('');
   const [showMentions, setShowMentions] = useState(false);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!swRegistered) {
@@ -125,6 +127,10 @@ export function EnhancedChatInterface({
   };
 
   const handleSendMessage = (uploadedFile?: any) => {
+    // If a React/DOM event was passed accidentally (from onClick), ignore it
+    if (uploadedFile && (uploadedFile.nativeEvent || uploadedFile.target)) {
+      uploadedFile = undefined;
+    }
     if (showMentions) {
       const list = filteredMentions();
       if (list.length) {
@@ -133,37 +139,44 @@ export function EnhancedChatInterface({
       }
     }
     const fileObj = uploadedFile || selectedFile;
+    // Only send if there's text or a real file
     if (!messageInput.trim() && !fileObj) return;
 
-    let messageContent = messageInput;
-    let messageType: Message['type'] = 'text';
-    let fileData: any = null;
-
     if (fileObj) {
-      messageType = fileObj.isImage ? 'image' : 'file';
-      fileData = {
+      // Send file or image message
+      const messageType: Message['type'] = fileObj.isImage ? 'image' : 'file';
+      const fileData = {
         fileUrl: fileObj.url,
         fileName: fileObj.originalName,
         fileSize: fileObj.size,
         mimeType: fileObj.mimetype
       };
-      if (!messageInput.trim()) {
-        messageContent = fileObj.originalName;
-      }
+      const message = {
+        roomId,
+        username,
+        content: messageInput.trim() ? messageInput : '',
+        type: messageType,
+        isEncrypted: false,
+        ...fileData
+      };
+      onSendMessage(message);
+      setMessageInput('');
+      setSelectedFile(null);
+      return;
     }
 
-    const message = {
-      roomId,
-      username,
-      content: messageContent,
-      type: messageType,
-      isEncrypted: false,
-      ...fileData
-    };
-
-    onSendMessage(message);
-    setMessageInput('');
-    setSelectedFile(null);
+    // Send text message only
+    if (messageInput.trim()) {
+      const message = {
+        roomId,
+        username,
+        content: messageInput,
+        type: 'text',
+        isEncrypted: false
+      };
+      onSendMessage(message);
+      setMessageInput('');
+    }
   };
 
   const handleVoiceRecording = async (audioBlob: Blob, duration: number) => {
@@ -226,6 +239,7 @@ export function EnhancedChatInterface({
 
     return (
       <div key={message.id} className={messageClass}>
+        {/* Avatar / spacer */}
         {!isOwnMessage && (
           <div className="mr-2 w-8 flex justify-center flex-shrink-0">
             {showUsername ? (
@@ -233,86 +247,111 @@ export function EnhancedChatInterface({
                 {message.username.charAt(0).toUpperCase()}
               </div>
             ) : (
-              // Invisible spacer to keep subsequent grouped bubbles aligned
               <div className="h-8 w-8" />
             )}
           </div>
         )}
-        <div className={bubbleClass}>
-            {message.type === 'system' && (
-              <p className="text-xs italic text-center opacity-70">{displayContent}</p>
-            )}
-            {message.type === 'text' && (
-              <div>
-                {showUsername && <p className="text-[11px] font-semibold mb-0.5 opacity-80 tracking-wide">{message.username}</p>}
-                <div className="leading-relaxed" dangerouslySetInnerHTML={{ __html: displayContent }} />
-              </div>
-            )}
-            {message.type === 'image' && (
-              <div className="space-y-1">
-                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
-                <div className="relative overflow-hidden rounded-lg group/image">
-                  <a href={message.fileUrl} target="_blank" rel="noopener noreferrer">
-                    <img
-                      src={message.fileUrl}
-                      alt={message.fileName}
-                      className="max-h-72 rounded-md object-cover hover:brightness-95 transition"
-                      loading="lazy"
-                    />
-                  </a>
-                  <span className="absolute bottom-1 right-2 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white opacity-90">
-                    {timeStr}
-                  </span>
-                </div>
-                {message.fileName && <p className="text-[10px] opacity-60">{message.fileName}</p>}
-              </div>
-            )}
-            {message.type === 'file' && (
-              <div className="space-y-1">
-                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
-                <a
-                  href={message.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                  download={message.fileName}
+        <div className={bubbleClass + ' group relative'}>
+          {/* Options menu (all users) */}
+          <div className={`absolute top-1 ${isOwnMessage ? 'right-1' : 'right-1'} opacity-0 group-hover:opacity-100 transition-opacity`}>            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="p-1 rounded-md hover:bg-background/30 focus:outline-none focus:ring-1 focus:ring-ring text-xs"
+                  aria-label="Message options"
                 >
-                  <FilePreview
-                    file={{
-                      originalName: message.fileName || '',
-                      filename: message.fileName || '',
-                      mimetype: message.mimeType || '',
-                      size: message.fileSize || 0,
-                      url: message.fileUrl || '',
-                      isImage: false
-                    }}
+                  <MoreVertical className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align={isOwnMessage ? 'end' : 'start'} className="w-40 text-xs">
+                <DropdownMenuItem
+                  onClick={() => navigator.clipboard.writeText(message.content || message.fileUrl || '')}
+                >Copy {message.type === 'text' ? 'text' : 'link'}</DropdownMenuItem>
+                {message.type === 'text' && (
+                  <DropdownMenuItem onClick={() => navigator.clipboard.writeText(JSON.stringify(message, null, 2))}>Copy JSON</DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Message body */}
+          {message.type === 'system' && (
+            <p className="text-xs italic text-center opacity-70">{displayContent}</p>
+          )}
+          {message.type === 'text' && (
+            <div>
+              {showUsername && <p className="text-[11px] font-semibold mb-0.5 opacity-80 tracking-wide">{message.username}</p>}
+              <pre
+                className="leading-relaxed whitespace-pre-wrap break-words font-mono text-[13px]"
+                style={{ margin: 0, background: 'none', border: 'none', padding: 0 }}
+                dangerouslySetInnerHTML={{ __html: displayContent.replace(/\n/g, '<br/>') }}
+              />
+            </div>
+          )}
+          {message.type === 'image' && (
+            <div className="space-y-1">
+              {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+              <div className="relative overflow-hidden rounded-lg group/image">
+                <a href={message.fileUrl} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={message.fileUrl}
+                    alt={message.fileName}
+                    className="max-h-72 rounded-md object-cover hover:brightness-95 transition"
+                    loading="lazy"
                   />
                 </a>
+                <span className="absolute bottom-1 right-2 text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white opacity-90">
+                  {timeStr}
+                </span>
               </div>
-            )}
-            {message.type === 'voice' && (
-              <div className="space-y-1">
-                {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
-                <VoiceMessage
-                  audioUrl={message.fileUrl || ''}
-                  duration={(message as any).duration || 0}
-                  username={message.username}
-                  timestamp={message.timestamp}
+              {message.fileName && <p className="text-[10px] opacity-60">{message.fileName}</p>}
+            </div>
+          )}
+          {message.type === 'file' && (
+            <div className="space-y-1">
+              {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+              <a
+                href={message.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+                download={message.fileName}
+              >
+                <FilePreview
+                  file={{
+                    originalName: message.fileName || '',
+                    filename: message.fileName || '',
+                    mimetype: message.mimeType || '',
+                    size: message.fileSize || 0,
+                    url: message.fileUrl || '',
+                    isImage: false
+                  }}
                 />
-                <a
-                  href={message.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] underline inline-block opacity-70"
-                  download={message.fileName}
-                >Download voice</a>
-              </div>
-            )}
-            {/* Timestamp (for non-image types) */}
-            {message.type !== 'image' && (
-              <span className="block text-[10px] mt-1 text-right opacity-60 leading-none select-none">{timeStr}</span>
-            )}
-  </div>
+              </a>
+            </div>
+          )}
+          {message.type === 'voice' && (
+            <div className="space-y-1">
+              {showUsername && <p className="text-[11px] font-semibold opacity-80 tracking-wide">{message.username}</p>}
+              <VoiceMessage
+                audioUrl={message.fileUrl || ''}
+                duration={(message as any).duration || 0}
+                username={message.username}
+                timestamp={message.timestamp}
+              />
+              <a
+                href={message.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] underline inline-block opacity-70"
+                download={message.fileName}
+              >Download voice</a>
+            </div>
+          )}
+          {message.type !== 'image' && (
+            <span className="block text-[10px] mt-1 text-right opacity-60 leading-none select-none">{timeStr}</span>
+          )}
+        </div>
       </div>
     );
   };
@@ -523,26 +562,34 @@ export function EnhancedChatInterface({
           
           {/* Message Input with @mention autocomplete */}
           <div className="relative flex-1">
-            <Input
+            <textarea
               ref={inputRef}
               value={messageInput}
-              placeholder={'Type a message'}
+              placeholder={'Type a message (Shift+Enter for new line)'}
               onChange={(e) => {
                 setMessageInput(e.target.value);
-                const el = e.target as HTMLInputElement;
+                const el = e.target as HTMLTextAreaElement;
                 detectMention(e.target.value, el.selectionStart || 0);
+                // auto-resize
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
               }}
               onKeyDown={(e) => {
                 if (showMentions) {
                   if (e.key === 'ArrowDown') { e.preventDefault(); const list = filteredMentions(); if (list.length) setMentionIndex(i => (i + 1) % list.length); }
                   else if (e.key === 'ArrowUp') { e.preventDefault(); const list = filteredMentions(); if (list.length) setMentionIndex(i => (i - 1 + list.length) % list.length); }
-                  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); const list = filteredMentions(); if (list.length) insertMention(list[mentionIndex]); }
+                  else if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') { e.preventDefault(); const list = filteredMentions(); if (list.length) insertMention(list[mentionIndex]); }
                   else if (e.key === 'Escape') { setShowMentions(false); }
-                } else if (e.key === 'Enter') {
+                  return;
+                }
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
                   handleSendMessage();
                 }
               }}
-              className="pr-2"
+              rows={1}
+              className="pr-2 w-full resize-none bg-background border border-input rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring disabled:cursor-not-allowed disabled:opacity-50 max-h-[200px]"
+              style={{ lineHeight: '1.3' }}
             />
             {showMentions && (
               <div className="absolute bottom-full mb-2 left-0 w-56 max-h-56 overflow-y-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md z-40 animate-in fade-in zoom-in-95">
@@ -564,7 +611,7 @@ export function EnhancedChatInterface({
           
           {/* Send Message Button */}
           <Button 
-            onClick={handleSendMessage} 
+            onClick={() => handleSendMessage()} 
             disabled={!messageInput.trim() && !selectedFile}
             title={'Send message'}
           >
@@ -591,5 +638,3 @@ export function EnhancedChatInterface({
     </div>
   );
 }
-
-// Mount global AI widget
