@@ -14,6 +14,7 @@
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
+  "dotenv": "^16.4.5",
     "multer": "^1.4.5-lts.1",
     "sharp": "^0.33.2",
     
