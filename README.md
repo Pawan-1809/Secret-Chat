@@ -588,21 +588,11 @@ npm install
 
 
 ---
-
-## 🙏 Acknowledgments
-
 <div align="center">
 
 **Built with ❤️ by developers, for developers**
 
 <img src="https://user-images.githubusercontent.com/74038190/212284158-e840e285-664b-44d7-b79b-e264b5e54825.gif" width="400">
-
-Special thanks to:
-- [React Team](https://reactjs.org/) for the amazing framework
-- [Socket.IO](https://socket.io/) for real-time capabilities  
-- [Tailwind CSS](https://tailwindcss.com/) for beautiful styling
-- [Radix UI](https://www.radix-ui.com/) for accessible components
-- [Vite](https://vitejs.dev/) for lightning-fast builds
 
 </div>
 
